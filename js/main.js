@@ -7,42 +7,51 @@ import { World, CITIES, rng32 } from './world.js';
 import { createCharacter, loadAnimations, CHARACTERS, applyOutfit, TOPS, BOTTOMS, waxCanvas } from './characters.js';
 import { Input, Player } from './player.js';
 import { Vehicle, Traffic } from './vehicles.js';
+import { setVehicleNight, setPlateStyle } from './cars.js';
 import { Crowd, makeMarker, makeItem } from './npc.js';
 import { Missions } from './missions.js';
-import { MISSIONS, WALK_MISSIONS, CITY_MISSIONS, VERSES, GRADES, SCROLLS, GREETINGS } from './content.js';
+import { Economy, PRICE, fmt } from './economy.js';
+import { audio, STATIONS, CREDITS } from './audio.js';
+import { WALK_MISSIONS, CITY_MISSIONS, VERSES, GRADES, SCROLLS, GREETINGS } from './content.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const NAMES = { kofi: 'Kofi', yao: 'Yao', mensah: 'Mensah', edem: 'Edem', kodjo: 'Kodjo', ama: 'Ama', afi: 'Afi', esi: 'Esi', akou: 'Akou' };
 const X = {
-  greet: ['Saluer', 'Greet'], passer: ['Un habitant', 'A local'], travel: ['Voyager', 'Travel'], enter: ['Monter', 'Get on'], exit: ['Descendre', 'Get off'], drive: ['Conduire', 'Drive'],
+  greet: ['Saluer', 'Greet'], passer: ['Un habitant', 'A local'], travel: ['Voyager', 'Travel'], enter: ['Monter sur ma moto', 'Get on my motorbike'], drive: ['Conduire ma voiture', 'Drive my car'], getOff: ['Descendre', 'Get off'],
   peds: ['Doucement ! Les piétons d’abord. « Tu aimeras ton prochain comme toi-même. »', 'Easy! Pedestrians first. "Thou shalt love thy neighbour as thyself."'],
   scroll: ['Tu as trouvé un parchemin !', 'You found a scroll!'], where: ['Où veux-tu aller ?', 'Where do you want to go?'], locked: ['Grade requis', 'Rank required'], here: ['Tu es ici', 'You are here'],
   mode: ['Choisis ton chemin', 'Choose your path'], walk: ['La Marche chrétienne', 'The Christian Walk'], walkD: ['De la nouvelle naissance à la maturité : 7 grades, 21 étapes. Prière, Parole, service, témoignage, combat, disciples.', 'From new birth to maturity: 7 ranks, 21 steps. Prayer, Word, service, witness, warfare, disciples.'],
   city: ['Lumière dans la ville', 'Light in the City'], cityD: ['Missions libres dans la ville : secourir, nourrir, réconcilier, pardonner. Vis ta foi au quotidien.', 'Free missions around the city: rescue, feed, reconcile, forgive. Live out your faith every day.'],
   both: ['Les deux chemins restent ouverts : tu peux changer à tout moment depuis le menu ☰.', 'Both paths stay open: you can switch at any time from the ☰ menu.'],
-  tabs: [['Missions', 'Missions'], ['Ma Bible', 'My Bible'], ['Grades', 'Ranks'], ['Options', 'Options']], noVerse: ['Accomplis des missions et cherche les parchemins pour remplir ta Bible.', 'Complete missions and look for scrolls to fill your Bible.'],
-  callMoto: ['Faire venir ma moto', 'Bring my motorbike'], callCar: ['Faire venir ma voiture', 'Bring my car'], outfit: ['Changer de personnage / tenue', 'Change character / outfit'], follow: ['Suivre', 'Track'], quality: ['Qualité graphique', 'Graphics quality'], sound: ['Son', 'Sound'],
-  menu: ['Menu principal', 'Main menu'], resume: ['Reprendre', 'Resume'], on: ['activé', 'on'], off: ['coupé', 'off'], done: ['accompli', 'done'], abandon: ['Abandonner la mission en cours', 'Abandon current mission'],
-  help: ['Déplacement : ZQSD / WASD / flèches · Courir : Maj · Action : E · Véhicule : F · Menu : Tab · Caméra : glisser la souris', 'Move: WASD / arrows · Run: Shift · Action: E · Vehicle: F · Menu: Tab · Camera: drag the mouse'],
-  helpT: ['Manette à gauche pour marcher, glisse à droite pour regarder. E : action · » : courir · 🚗 : véhicule', 'Left stick to walk, drag on the right to look. E: action · »: run · 🚗: vehicle'],
+  tabs: [['Missions', 'Missions'], ['Ma Bible', 'My Bible'], ['Grades', 'Ranks'], ['Musique', 'Music'], ['Options', 'Options']], noVerse: ['Accomplis des missions et cherche les parchemins pour remplir ta Bible.', 'Complete missions and look for scrolls to fill your Bible.'],
+  callMoto: ['Faire venir ma moto', 'Bring my motorbike'], callCar: ['Faire venir ma voiture', 'Bring my car'], callZem: ['Appeler un zémidjan', 'Call a moto-taxi'], zemJob: ['Travailler comme zémidjan / taxi', 'Work as a moto-taxi / taxi'], stopJob: ['Arrêter le travail', 'Stop working'],
+  outfit: ['Personnage et vêtements (tailleur)', 'Character and clothes (tailor)'], quality: ['Qualité graphique', 'Graphics quality'], sound: ['Sons', 'Sound'],
+  menu: ['Menu principal', 'Main menu'], resume: ['Reprendre', 'Resume'], on: ['activés', 'on'], off: ['coupés', 'off'], done: ['accompli', 'done'], abandon: ['Abandonner la mission en cours', 'Abandon current mission'],
+  help: ['Déplacement : ZQSD / WASD / flèches · Courir : Maj · Action : E · Véhicule : F · Radio : R · Klaxon : H · Travail : J · Menu : Tab · Caméra : glisser la souris', 'Move: WASD / arrows · Run: Shift · Action: E · Vehicle: F · Radio: R · Horn: H · Work: J · Menu: Tab · Camera: drag the mouse'],
+  helpT: ['Manette à gauche pour marcher, glisse à droite pour regarder. E : action · » : courir · 🚗 : véhicule · 📻 : radio', 'Left stick to walk, drag on the right to look. E: action · »: run · 🚗: vehicle · 📻: radio'],
   scrolls: ['Parchemins trouvés dans cette ville', 'Scrolls found in this city'], welcome: ['Bienvenue à', 'Welcome to'], confirmNew: ['Recommencer effacera ta progression. Continuer ?', 'Starting over will erase your progress. Continue?'], yes: ['Oui', 'Yes'], no: ['Non', 'No'],
   osm: ['Plan des villes : © les contributeurs d’OpenStreetMap', 'City maps: © OpenStreetMap contributors'],
+  free: ['offert par ton église pour ta mission', 'paid by your church for your mission'], ticket: ['Billet', 'Ticket'], short: ['Il te manque', 'You are short by'],
+  stations: ['Stations de radio', 'Radio stations'], radioOff: ['Radio éteinte', 'Radio off'], musicMode: ['Écouter la musique', 'Listen to music'], mAlways: ['partout (écouteurs)', 'everywhere (earphones)'], mVeh: ['seulement en véhicule', 'in vehicles only'], mOff: ['jamais', 'never'],
+  addSongs: ['➕ Ajouter mes propres chansons', '➕ Add my own songs'], addHint: ['Choisis des fichiers audio de ton appareil : ils restent sur ton appareil.', 'Pick audio files from your device: they stay on your device.'],
+  start: ['Bienvenue à Lomé ! Tu as un peu d’argent : prends un zémidjan 🏍 pour aller loin, ramasse des bouteilles ♻ et fais de petits boulots 💼 pour gagner ta vie.', 'Welcome to Lomé! You have a little money: take a moto-taxi 🏍 to go far, collect bottles ♻ and do small jobs 💼 to earn your living.'],
+  price: ['prix', 'price'], tailor: ['Les tenues colorées s’achètent chez le tailleur.', 'Coloured outfits are bought from the tailor.'], motoGift: ['Frère Kodjo t’offre sa moto ! Elle t’attend près de toi.', 'Brother Kodjo gives you his motorbike! It is waiting near you.'],
 };
 const x = k => L(X[k]);
 
 const G = {
-  scene: new THREE.Scene(), time: 0, tod: 0.3, state: 'boot', vehicles: [], scrollItems: [], switching: false,
-  reward(r, silent) { for (const k of ['faith', 'love', 'wisdom']) if (r[k]) S.stats[k] += r[k]; if (r.talents) S.talents += r.talents; this.refreshHud(); },
+  scene: new THREE.Scene(), time: 0, tod: 0.3, state: 'boot', vehicles: [], scrollItems: [], switching: false, quality: 'high',
+  reward(r) { for (const k of ['faith', 'love', 'wisdom']) if (r[k]) S.stats[k] += r[k]; const m = (r.talents || 0) * 50 + (r.money || 0); if (m) S.money += m; this.refreshHud(); },
   refreshHud() { const g = GRADES[S.grade]; ui.hud(L(g.name), g.icon); },
-  sfx(name) { sfx(name); },
-  onGrade() { if (S.grade >= 2 && !this.vehicles.some(v => v.type === 'sedan')) this.spawnOwn('sedan'); },
+  sfx(name) { audio.sfx(name); },
+  onGrade() { if (S.grade >= 1 && !S.owned.moto) { S.owned.moto = true; this.spawnOwn('moto'); ui.toast(x('motoGift'), true, 6000); save(); } },
+  currentGoal() { const m = this.missions; if (!m) return null; if (m.active) { const pp = this.player.pos; let b = null, bd = 1e9; for (const q of m.targets) { const d = Math.hypot(q.x - pp.x, q.z - pp.z); if (d < bd) { bd = d; b = q; } } return b; } const g = m.idleGoal(); return g.x !== undefined ? g : null; },
 };
 window.G = G;
 
 // ---------- Rendu ----------
 const canvas = $('game');
-const quality = params.get('q') || (S.settings && S.settings.quality !== 'auto' ? S.settings.quality : null);
 let Q = 'high';
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -56,7 +65,7 @@ let envRT = null, envTimer = 99;
 const sunDir = new THREE.Vector3();
 
 function applyQuality() {
-  const s = S.settings.quality; Q = params.get('q') || (s !== 'auto' ? s : (matchMedia('(pointer: coarse)').matches ? 'medium' : 'high'));
+  const s = S.settings.quality; Q = params.get('q') || (s !== 'auto' ? s : (matchMedia('(pointer: coarse)').matches ? 'medium' : 'high')); G.quality = Q;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, Q === 'high' ? 2 : Q === 'medium' ? 1.5 : 1));
   renderer.shadowMap.enabled = Q !== 'low'; renderer.shadowMap.type = THREE.PCFShadowMap; sun.castShadow = Q !== 'low';
   const ms = Q === 'high' ? 2048 : 1024; if (sun.shadow.mapSize.x !== ms) { sun.shadow.mapSize.set(ms, ms); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
@@ -76,48 +85,41 @@ function updateSky(dt, force) {
   sun.intensity = 0.25 + day * 3.0; sun.color.setHSL(0.09, 0.35 + (1 - day) * 0.4, 0.5 + day * 0.42); hemi.intensity = 0.32 + day * 0.5;
   renderer.toneMappingExposure = 0.34 + day * 0.1 + night * 0.25;
   G.scene.fog.color.setRGB(0.1 + day * 0.56, 0.13 + day * 0.63, 0.2 + day * 0.68);
-  G.night = night; if (G.world) G.world.setNight(night);
+  G.night = night; if (G.world) G.world.setNight(night); setVehicleNight(night);
   envTimer += dt;
   if (force || envTimer > (Q === 'low' ? 60 : 20)) { envTimer = 0; const u2 = sky2.material.uniforms; for (const k of ['sunPosition', 'turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) { if (u2[k].value.copy) u2[k].value.copy(u[k].value); else u2[k].value = u[k].value; }
     const rt = pmrem.fromScene(skyScene, 0, 1, 2000); if (envRT) envRT.dispose(); envRT = rt; G.scene.environment = rt.texture; G.scene.environmentIntensity = 0.55; }
-}
-
-// ---------- Sons (synthétisés) ----------
-let actx = null;
-function sfx(name) {
-  if (!S.settings.sound) return; try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
-    const seq = { pick: [[880, 0, 0.09], [1320, 0.07, 0.12]], win: [[523, 0, 0.15], [659, 0.13, 0.15], [784, 0.26, 0.15], [1047, 0.39, 0.4]], grade: [[392, 0, 0.2], [523, 0.18, 0.2], [659, 0.36, 0.2], [784, 0.54, 0.2], [1047, 0.72, 0.7]], tap: [[660, 0, 0.05]] }[name] || [];
-    for (const [f, t0, d] of seq) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, actx.currentTime + t0); g.gain.linearRampToValueAtTime(0.12, actx.currentTime + t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + t0 + d); o.connect(g).connect(actx.destination); o.start(actx.currentTime + t0); o.stop(actx.currentTime + t0 + d + 0.05); }
-  } catch (e) { /* pas de son */ }
 }
 
 // ---------- Ville ----------
 const progress = (p, text) => { $('loadbar').style.width = Math.round(p * 100) + '%'; if (text) $('loadtext').textContent = text; };
 async function enterCity(id, spawn) {
   G.switching = true;
-  if (G.missions) G.missions.dispose(); if (G.crowd) G.crowd.dispose(); if (G.traffic) G.traffic.dispose();
+  if (G.missions) G.missions.dispose(); if (G.eco) G.eco.dispose(); if (G.crowd) G.crowd.dispose(); if (G.traffic) G.traffic.dispose();
+  if (G.player && G.player.vehicle) G.player.exit();
   for (const v of G.vehicles) v.dispose(); G.vehicles = []; for (const s of G.scrollItems) G.scene.remove(s.mesh); G.scrollItems = [];
   if (G.world) G.world.dispose();
-  S.city = id; progress(0.35, L(CITIES[id].name) + '…');
+  S.city = id; progress(0.35, L(CITIES[id].name) + '…'); setPlateStyle(id);
   const world = G.world = await World.create(G.scene, id, Q); progress(0.7);
   const sp = spawn === 'saved' && S.pos && S.pos.c === id ? S.pos : world.poi(spawn === 'station' ? 'station' : S.started ? 'home' : 'landmark');
   const f = world.freeNear(sp.x + (sp.c ? 0 : 5), sp.z + (sp.c ? 0 : 5), 0.8);
-  if (!G.player) { G.player = new Player(G.scene, camera, world); G.input = new Input(canvas); } else { if (G.player.vehicle) G.player.exit(); G.player.world = world; }
+  if (!G.player) { G.player = new Player(G.scene, camera, world); G.input = new Input(canvas); } else G.player.world = world;
   if (!G.player.ch) await setCharacter(S.char);
   G.player.teleport(f.x, f.z, sp.face !== undefined ? sp.face + Math.PI : 0);
   G.crowd = new Crowd(G.scene, world, Q); await G.crowd.init(G.player.pos); progress(0.85);
   G.traffic = new Traffic(G.scene, world, Q, G.player.pos);
-  G.spawnOwn('moto'); if (S.grade >= 2) G.spawnOwn('sedan');
+  if (S.owned.moto) G.spawnOwn('moto'); if (S.owned.car) G.spawnOwn('sedan');
   placeScrolls();
+  G.eco = new Economy(G); await G.eco.setup();
   G.missions = new Missions(G); G.switching = false; await G.missions.refresh(); progress(1);
+  audio.ctxState.africa = !world.cfg.style;
   $('cityname').textContent = `${world.cityName()} · ${L(world.cfg.country)}`; updateSky(0, true); G.refreshHud();
 }
 G.spawnOwn = function (type) {
+  const key = type === 'moto' ? 'moto' : 'car'; if (!S.owned[key]) return null;
   let v = this.vehicles.find(q => q.type === type);
-  if (!v) { v = new Vehicle(type, type === 'moto' ? 0x1f5fa8 : 0xf4f4f0, this.scene); v.owned = true; v.marker = makeMarker(0x7dd87d, false); v.marker.userData.dia.position.y = type === 'moto' ? 1.9 : 2.2; this.scene.add(v.marker); const d = v.dispose.bind(v); v.dispose = () => { this.scene.remove(v.marker); d(); }; this.vehicles.push(v); }
-  const pp = this.player.pos, w = this.world, n = w.nodes[w.nearestNode(pp.x, pp.z, 3)], e = n.adj.find(q => q.cls <= 3) || n.adj[0], m = w.nodes[e.to], l = Math.hypot(m.x - n.x, m.z - n.z) || 1, dx = (m.x - n.x) / l, dz = (m.z - n.z) / l, off = e.w / 2 - 1.1, k = type === 'moto' ? 2 : 7;
-  const p = w.freeNear(n.x + dx * k - dz * off, n.z + dz * k + dx * off, 1.3); v.place(p.x, p.z, Math.atan2(dx, dz)); return v;
+  if (!v) { v = new Vehicle(type, type === 'moto' ? 0x1f5fa8 : 0xf4f4f0, this.scene, { rhd: !!this.world.cfg.left, plate: 2 }); v.owned = true; v.fuel = Math.min(v.tank, S.fuel[key]); v.marker = makeMarker(0x7dd87d, false); v.marker.userData.dia.position.y = type === 'moto' ? 1.9 : 2.2; this.scene.add(v.marker); const d = v.dispose.bind(v); v.dispose = () => { this.scene.remove(v.marker); d(); }; this.vehicles.push(v); }
+  const pp = this.player.pos, s = this.world.roadside(pp.x, pp.z, type === 'moto' ? 2.5 : 8), p = this.world.freeNear(s.x, s.z, 1.2); v.place(p.x, p.z, s.h); v.pos.y = this.world.groundY(p.x, p.z); return v;
 };
 async function setCharacter(id) { const ch = await createCharacter(id); await applyOutfit(ch, S.top, S.bottom); G.player.setCharacter(ch); S.char = id; }
 function placeScrolls() {
@@ -134,20 +136,22 @@ function chooseMode() {
 }
 const playable = Object.keys(CHARACTERS).filter(k => CHARACTERS[k].playable);
 function openCharsel(first) {
-  G.state = 'charsel'; ui.show('hud', false); ui.show('charsel'); let busy = false;
-  const name = () => { $('cs-name').innerHTML = `${NAMES[S.char]}<small>${playable.indexOf(S.char) + 1} / ${playable.length}</small>`; };
-  const sw = (el, list, cur, set) => { el.innerHTML = ''; list.forEach((o, i) => { const b = document.createElement('button'); b.className = 'sw' + (i === cur() ? ' on' : ''); const lock = (o && o.wax !== undefined && S.grade < 4); if (lock) b.classList.add('lock');
+  G.state = 'charsel'; ui.show('hud', false); ui.show('charsel'); let busy = false; if (G.player.vehicle) G.player.exit();
+  const name = () => { $('cs-name').innerHTML = `${NAMES[S.char]}<small>${playable.indexOf(S.char) + 1} / ${playable.length} · 🪙 ${fmt(S.money)}</small>`; };
+  const sw = (el, list, key, cur, set) => { el.innerHTML = ''; list.forEach((o, i) => { const b = document.createElement('button'); b.className = 'sw' + (i === cur() ? ' on' : ''); const own = !o || S.wardrobe[key].includes(i) || (first && o.c), price = o && o.wax !== undefined ? PRICE.wax : PRICE.top;
     if (!o) { b.textContent = '∅'; b.style.background = '#444'; } else if (o.c) b.style.background = o.c; else b.style.backgroundImage = `url(${waxCanvas(o.wax).toDataURL()})`;
-    b.onclick = async () => { if (lock) { ui.toast(`${x('locked')} : ${L(GRADES[4].name)}`); return; } if (busy) return; busy = true; set(i); await applyOutfit(G.player.ch, S.top, S.bottom); busy = false; draw(); }; el.appendChild(b); }); };
-  const draw = () => { name(); sw($('cs-tops'), TOPS, () => S.top, i => S.top = i); sw($('cs-bottoms'), BOTTOMS, () => S.bottom, i => S.bottom = i); };
+    if (!own) b.innerHTML += `<span class="pr">${fmt(price)}</span>`;
+    b.onclick = async () => { if (busy) return; if (!own) { if (S.money < price) { audio.sfx('deny'); ui.toast(`${x('short')} ${fmt(price - S.money)}`); return; } S.money -= price; audio.sfx('pay'); }
+      if (!S.wardrobe[key].includes(i)) S.wardrobe[key].push(i); busy = true; set(i); await applyOutfit(G.player.ch, S.top, S.bottom); busy = false; draw(); save(); }; el.appendChild(b); }); };
+  const draw = () => { name(); sw($('cs-tops'), TOPS, 't', () => S.top, i => S.top = i); sw($('cs-bottoms'), BOTTOMS, 'b', () => S.bottom, i => S.bottom = i); };
   const step = async d => { if (busy) return; busy = true; const i = (playable.indexOf(S.char) + d + playable.length) % playable.length; const pos = G.player.pos.clone(), h = G.player.heading; await setCharacter(playable[i]); G.player.pos.copy(pos); G.player.heading = h; busy = false; draw(); };
   $('cs-prev').onclick = () => step(-1); $('cs-next').onclick = () => step(1); $('cs-input').value = S.name; draw();
   G.player.yaw = G.player.heading; G.player.pitch = 0.08; G.player.dist = 3.4; G.player.first = true;
   $('cs-ok').onclick = async () => { if (busy) return; S.name = $('cs-input').value.trim().slice(0, 16) || NAMES[S.char]; ui.show('charsel', false); G.player.yaw = G.player.heading + Math.PI; G.player.pitch = 0.22; G.player.dist = 4.6;
-    if (first) { S.started = true; save(); await chooseMode(); } save(); startPlay(); };
+    if (first) { S.started = true; save(); await chooseMode(); } save(); startPlay(); if (first) ui.toast(x('start'), true, 9000); };
 }
-function startPlay() { G.state = 'play'; ui.show('menu', false); ui.show('hud'); ui.show('touch', ui.touch); G.refreshHud(); G.input.clear(); }
-function showMenu() { G.state = 'menu'; ui.refreshTexts(); ui.show('hud', false); ui.show('menu'); $('menu-foot').textContent = T('foot') + ' — ' + x('osm'); }
+function startPlay() { G.state = 'play'; ui.show('menu', false); ui.show('hud'); ui.show('touch', ui.touch); G.refreshHud(); G.input.clear(); audio.ctxState.menu = false; audio.stopOnce(); }
+function showMenu() { G.state = 'menu'; ui.refreshTexts(); ui.show('hud', false); ui.show('menu'); $('menu-foot').textContent = T('foot') + ' — ' + x('osm'); audio.ctxState.menu = true; }
 
 function phone(tab = 0) {
   const tabs = X.tabs.map((t, i) => `<button class="${i === tab ? 'on' : ''}" data-t="${i}">${L(t)}</button>`).join('');
@@ -162,29 +166,41 @@ function phone(tab = 0) {
     body += S.verses.length ? S.verses.map(id => ui.scriptureHTML(VERSES[id])).join('<div style="height:8px"></div>') : `<p>${x('noVerse')}</p>`;
   } else if (tab === 2) {
     body += '<div class="list">' + GRADES.slice(1).map((g, i) => `<div class="item ${S.grade > i ? '' : 'lock'}"><div class="gradeline"><div class="ic">${g.icon}</div><div><b>${i + 1}. ${esc(L(g.name))}</b><small>${esc(L(g.desc))}</small><small style="color:#f5c542">${S.grade > i ? '🏅 ' + esc(L(g.badge)) : ''}</small></div></div></div>`).join('') + '</div>';
+  } else if (tab === 3) {
+    const mm2 = audio.musicMode();
+    body += `<h3>${x('stations')}</h3><div class="opts">` + STATIONS.map((s, i) => `<button data-st="${i}" class="${audio.station === i ? 'sel' : ''}"><div class="station"><div class="ic">${s.icon}</div><div><b>${esc(L(s.name))}</b><br><small>${esc(L(s.desc))}${i === 4 && s.tracks.length ? ' · ' + s.tracks.length : ''}</small></div></div></button>`).join('') + `<button data-st="-1" class="${audio.station < 0 ? 'sel' : ''}"><div class="station"><div class="ic">🔇</div><div><b>${x('radioOff')}</b></div></div></button></div>`;
+    body += `<h3>${x('musicMode')}</h3><div class="tabs">${[['always', 'mAlways'], ['vehicle', 'mVeh'], ['off', 'mOff']].map(([k, l]) => `<button data-mm="${k}" class="${mm2 === k ? 'on' : ''}">${x(l)}</button>`).join('')}</div>`;
+    body += `<div class="opts"><button id="add-songs" class="big" style="text-align:center">${x('addSongs')}</button></div><input id="song-files" type="file" accept="audio/*" multiple style="display:none"><p style="opacity:.6;font-size:12px">${x('addHint')}</p><p style="opacity:.55;font-size:11px">${esc(CREDITS)}</p>`;
   } else {
-    const b = (id, t) => `<button class="big" data-a="${id}" style="text-align:center">${t}</button>`;
-    body += `<div class="opts">${b('moto', '🏍 ' + x('callMoto'))}${S.grade >= 2 ? b('car', '🚗 ' + x('callCar')) : ''}${b('outfit', '👕 ' + x('outfit'))}${G.missions.active ? b('abandon', '✖ ' + x('abandon')) : ''}${b('lang', '🌍 ' + T('lang'))}${b('quality', `⚙ ${x('quality')} : ${S.settings.quality}`)}${b('sound', `🔊 ${x('sound')} : ${S.settings.sound ? x('on') : x('off')}`)}${b('menu', '⌂ ' + x('menu'))}</div><p style="opacity:.6;font-size:12px">${ui.touch ? x('helpT') : x('help')}<br>${x('osm')}</p>`;
+    const b = (id, t) => `<button class="big" data-a="${id}" style="text-align:center">${t}</button>`, job = G.eco.job && G.eco.job.kind === 'zem';
+    body += `<div class="opts">${b('zem', '📞 ' + x('callZem') + ' — ' + fmt(PRICE.call))}${S.owned.moto ? b('moto', '🏍 ' + x('callMoto')) : ''}${S.owned.car ? b('car', '🚗 ' + x('callCar')) : ''}${S.owned.moto || S.owned.car ? b('job', '💼 ' + (job ? x('stopJob') : x('zemJob'))) : ''}${b('outfit', '👕 ' + x('outfit'))}${G.missions.active ? b('abandon', '✖ ' + x('abandon')) : ''}${b('lang', '🌍 ' + T('lang'))}${b('quality', `⚙ ${x('quality')} : ${S.settings.quality}`)}${b('sound', `🔊 ${x('sound')} : ${S.settings.sound ? x('on') : x('off')}`)}${b('menu', '⌂ ' + x('menu'))}</div><p style="opacity:.6;font-size:12px">${ui.touch ? x('helpT') : x('help')}<br>${x('osm')}</p>`;
   }
   const box = ui.openModal(`<div class="tabs">${tabs}</div>${body}<div class="opts" style="align-items:center;margin-top:14px"><button class="big gold" id="ph-close" style="min-width:200px;text-align:center">${x('resume')}</button></div>`);
   const re = t => { ui.closeModal(); phone(t); };
   box.querySelectorAll('[data-t]').forEach(b => b.onclick = () => re(+b.dataset.t));
   box.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); re(0); });
+  box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { audio.setStation(+b.dataset.st); re(3); });
+  box.querySelectorAll('[data-mm]').forEach(b => b.onclick = () => { S.settings.music = b.dataset.mm; save(); re(3); });
+  const add = box.querySelector('#add-songs'); if (add) { const inp = box.querySelector('#song-files'); add.onclick = () => inp.click(); inp.onchange = () => { if (inp.files.length) { audio.addUserFiles(inp.files); re(3); } }; }
   box.querySelector('#ph-close').onclick = () => ui.closeModal();
   box.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const a = b.dataset.a;
-    if (a === 'moto' || a === 'car') { if (G.player.vehicle) G.player.exit(); G.spawnOwn(a === 'moto' ? 'moto' : 'sedan'); ui.closeModal(); }
+    if (a === 'moto' || a === 'car') { if (G.player.vehicle) { if (G.eco.ride) return; G.player.exit(); } G.spawnOwn(a === 'moto' ? 'moto' : 'sedan'); ui.closeModal(); }
+    else if (a === 'zem') { ui.closeModal(); G.eco.callZem(); }
+    else if (a === 'job') { ui.closeModal(); G.eco.toggleZemJob(); }
     else if (a === 'outfit') { ui.closeModal(); openCharsel(false); }
     else if (a === 'abandon') { G.missions.cancel(); ui.closeModal(); }
-    else if (a === 'lang') { S.lang = S.lang === 'fr' ? 'en' : 'fr'; save(); ui.refreshTexts(); $('cityname').textContent = `${G.world.cityName()} · ${L(G.world.cfg.country)}`; G.refreshHud(); re(3); }
-    else if (a === 'quality') { const o = ['auto', 'low', 'medium', 'high']; S.settings.quality = o[(o.indexOf(S.settings.quality) + 1) % 4]; save(); applyQuality(); re(3); }
-    else if (a === 'sound') { S.settings.sound = !S.settings.sound; save(); re(3); }
+    else if (a === 'lang') { S.lang = S.lang === 'fr' ? 'en' : 'fr'; save(); ui.refreshTexts(); $('cityname').textContent = `${G.world.cityName()} · ${L(G.world.cfg.country)}`; G.refreshHud(); re(4); }
+    else if (a === 'quality') { const o = ['auto', 'low', 'medium', 'high']; S.settings.quality = o[(o.indexOf(S.settings.quality) + 1) % 4]; save(); applyQuality(); re(4); }
+    else if (a === 'sound') { S.settings.sound = !S.settings.sound; save(); re(4); }
     else if (a === 'menu') { ui.closeModal(); save(); showMenu(); } });
 }
 function travelMenu() {
-  const rows = Object.keys(CITIES).map(c => { const cf = CITIES[c], here = c === S.city, lock = S.grade < cf.grade; return `<button data-c="${c}" ${here || lock ? 'disabled' : ''} style="${here || lock ? 'opacity:.45' : ''}"><b>${esc(L(cf.name))}</b> — ${esc(L(cf.country))}<br><small>${here ? x('here') : lock ? `🔒 ${x('locked')} : ${esc(L(GRADES[cf.grade].name))}` : '✈'}</small></button>`; }).join('');
-  const box = ui.openModal(`<h2>${x('where')}</h2><div class="opts">${rows}</div><div class="opts" style="align-items:center"><button class="big" id="tr-x" style="min-width:200px;text-align:center">${T('close')}</button></div>`);
+  const nw = G.missions.nextWalk();
+  const rows = Object.keys(CITIES).map(c => { const cf = CITIES[c], here = c === S.city, lock = S.grade < cf.grade, free = nw && nw.city === c, price = free ? 0 : PRICE.ticket[c];
+    return `<button data-c="${c}" data-p="${price}" ${here || lock ? 'disabled' : ''} style="${here || lock ? 'opacity:.45' : ''}"><b>${esc(L(cf.name))}</b> — ${esc(L(cf.country))}<br><small>${here ? x('here') : lock ? `🔒 ${x('locked')} : ${esc(L(GRADES[cf.grade].name))}` : free ? `✈ ${x('ticket')} ${x('free')}` : `✈ ${x('ticket')} : ${fmt(price)}`}</small></button>`; }).join('');
+  const box = ui.openModal(`<h2>${x('where')}</h2><p style="opacity:.8">🪙 ${fmt(S.money)}</p><div class="opts">${rows}</div><div class="opts" style="align-items:center"><button class="big" id="tr-x" style="min-width:200px;text-align:center">${T('close')}</button></div>`);
   box.querySelector('#tr-x').onclick = () => ui.closeModal();
-  box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { ui.closeModal(); if (G.missions.active) G.missions.cancel(); setTimeout(() => travel(b.dataset.c), 50); });
+  box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const p = +b.dataset.p; if (p && !G.eco.pay(p)) return; ui.closeModal(); if (G.missions.active) G.missions.cancel(); G.eco.endJob(true); setTimeout(() => travel(b.dataset.c), 50); });
 }
 
 // ---------- Mini-carte ----------
@@ -193,83 +209,103 @@ function drawMinimap() {
   const w = G.world, pp = G.player.pos, R = 170, sc = w.mapScale, N = mm.width, k = N / (2 * R);
   mg.fillStyle = '#31475c'; mg.fillRect(0, 0, N, N);
   mg.drawImage(w.mapCanvas, (pp.x - R - w.ext.x0) / sc, (pp.z - R - w.ext.z0) / sc, 2 * R / sc, 2 * R / sc, 0, 0, N, N);
-  const dot = (x0, z0, col, r = 5, clamp = true, ring) => { let dx = (x0 - pp.x) * k, dz = (z0 - pp.z) * k; const d = Math.hypot(dx, dz), lim = N / 2 - 8; if (d > lim) { if (!clamp) return; dx *= lim / d; dz *= lim / d; } mg.fillStyle = col; mg.beginPath(); mg.arc(N / 2 + dx, N / 2 + dz, r, 0, 7); mg.fill(); mg.lineWidth = 2; mg.strokeStyle = ring || '#00000088'; mg.stroke(); };
+  const place = (x0, z0, clamp) => { let dx = (x0 - pp.x) * k, dz = (z0 - pp.z) * k; const d = Math.hypot(dx, dz), lim = N / 2 - 8; if (d > lim) { if (!clamp) return null; dx *= lim / d; dz *= lim / d; } return [N / 2 + dx, N / 2 + dz]; };
+  const dot = (x0, z0, col, r = 5, clamp = true, ring) => { const p = place(x0, z0, clamp); if (!p) return; mg.fillStyle = col; mg.beginPath(); mg.arc(p[0], p[1], r, 0, 7); mg.fill(); mg.lineWidth = 2; mg.strokeStyle = ring || '#00000088'; mg.stroke(); };
   const st = w.poi('station'), hm = w.poi('home'), ch = w.poi('church'); dot(st.x, st.z, '#ffffff', 4, false); dot(hm.x, hm.z, '#2f6f9f', 4, false); dot(ch.x, ch.z, '#b3261e', 4, false);
   for (const s of G.scrollItems) dot(s.x, s.z, '#fff0a8', 2.5, false);
+  for (const b of G.eco.bottles) dot(b.x, b.z, '#3fae6a', 2, false);
+  mg.font = '13px sans-serif'; mg.textAlign = 'center'; mg.textBaseline = 'middle';
+  for (const ic of G.eco.mapIcons()) { const p = place(ic.x, ic.z, false); if (p) mg.fillText(ic.ch, p[0], p[1]); }
   for (const v of G.vehicles) if (!v.rider) dot(v.pos.x, v.pos.z, '#7dd87d', 4, true);
   const m = G.missions; if (!m.active) for (const o of m.offers) dot(o.x, o.z, o.def.mode === 'walk' ? '#f5c542' : '#5fb7f0', 6, o.def.mode === S.mode);
   const pulse = 5 + Math.sin(G.time * 5) * 1.5; for (const tg of m.targets) dot(tg.x, tg.z, '#ffffff', pulse, true, '#f5c542');
+  for (const tg of G.eco.targets) dot(tg.x, tg.z, '#7dd87d', pulse, true, '#ffffff');
+  if (G.eco.ride) dot(G.eco.ride.dest.x, G.eco.ride.dest.z, '#ffffff', pulse, true, '#7dd87d');
   mg.save(); mg.translate(N / 2, N / 2); mg.rotate(-G.player.heading + Math.PI); mg.fillStyle = '#fff'; mg.strokeStyle = '#000'; mg.lineWidth = 2; mg.beginPath(); mg.moveTo(0, -9); mg.lineTo(6, 7); mg.lineTo(0, 3); mg.lineTo(-6, 7); mg.closePath(); mg.fill(); mg.stroke(); mg.restore();
 }
 
 // ---------- Boucle ----------
 const clock = new THREE.Clock(); const goal = makeMarker(0xffffff); G.scene.add(goal); goal.visible = false; let pedToast = 0, saveT = 0, busyScroll = false;
+const TALK = ['Parler', 'Talk'], START = ['Commencer', 'Start'];
 function interact() {
-  const pl = G.player, pp = pl.pos, inp = G.input, m = G.missions, w = G.world; let prompt = null, key = 'E';
+  const pl = G.player, pp = pl.pos, inp = G.input, m = G.missions, w = G.world, eco = G.eco; let prompt = null, key = 'E';
+  if (inp.take('KeyR')) audio.cycle(1);
+  if (inp.take('KeyH')) audio.horn(pl.vehicle ? pl.vehicle.isMoto : true);
+  if (inp.take('KeyJ')) eco.toggleZemJob();
   // véhicules
-  if (pl.vehicle) { if (Math.abs(pl.vehicle.speed) < 3) { if (inp.take('KeyF')) pl.exit(); } }
-  else { let near = null; for (const v of G.vehicles) if (Math.hypot(v.pos.x - pp.x, v.pos.z - pp.z) < v.radius + 2.2) near = v; if (near) { prompt = near.type === 'moto' ? x('enter') : x('drive'); key = 'F'; if (inp.take('KeyF')) { pl.enter(near); return; } } }
+  if (eco.ride) { const n = eco.nearby(); prompt = n.prompt; if (inp.take('KeyE')) n.act(); inp.take('KeyF'); ui.setPrompt(prompt, 'E'); return; }
+  if (pl.vehicle) { if (Math.abs(pl.vehicle.speed) < 3 && inp.take('KeyF')) { pl.exit(); return; } }
+  else { let near = null; for (const v of G.vehicles) if (Math.hypot(v.pos.x - pp.x, v.pos.z - pp.z) < v.radius + 2.2) near = v; if (near) { prompt = near.isMoto ? x('enter') : x('drive'); key = 'F'; if (inp.take('KeyF')) { pl.enter(near); return; } } }
+  const near = eco.nearby();
   if (m.prompt) { prompt = m.prompt; key = 'E'; }
-  else if (!m.active) {
-    const o = m.nearOffer();
-    if (o) { prompt = `${o.npc ? L(TALK) : L(START)} — ${L(o.def.title)}`; key = 'E'; if (inp.take('KeyE')) { m.start(o); return; } }
-    else { const st = w.poi('station'); if (Math.hypot(st.x - pp.x, st.z - pp.z) < 6) { prompt = x('travel'); key = 'E'; if (inp.take('KeyE')) { travelMenu(); return; } }
-      else if (!pl.vehicle) { const p = G.crowd.nearestPed(pp, 2.3); if (p && p.pause <= 0) { prompt = x('greet'); key = 'E'; if (inp.take('KeyE')) { G.crowd.stop(p, pp, 6); pl.heading = Math.atan2(p.ch.root.position.x - pp.x, p.ch.root.position.z - pp.z); const g = GREETINGS[Math.random() * GREETINGS.length | 0][0]; if (G.time - (p.greeted || -99) > 60) { p.greeted = G.time; S.greeted++; G.reward({ love: 1 }, true); } ui.say(x('passer'), L(g)); return; } } } }
+  else if (!m.active && m.nearOffer() && !pl.vehicle) { const o = m.nearOffer(); prompt = `${o.npc ? L(TALK) : L(START)} — ${L(o.def.title)}`; key = 'E'; if (inp.take('KeyE')) { eco.endJob(true); m.start(o); return; } }
+  else if (near) { prompt = near.prompt; key = 'E'; if (inp.take('KeyE')) { near.act(); return; } }
+  else if (!m.active && !pl.vehicle) {
+    const st = w.poi('station');
+    if (Math.hypot(st.x - pp.x, st.z - pp.z) < 6) { prompt = x('travel'); key = 'E'; if (inp.take('KeyE')) { travelMenu(); return; } }
+    else { const p = G.crowd.nearestPed(pp, 2.3); if (p && p.pause <= 0) { prompt = x('greet'); key = 'E'; if (inp.take('KeyE')) { G.crowd.stop(p, pp, 6); pl.heading = Math.atan2(p.ch.root.position.x - pp.x, p.ch.root.position.z - pp.z); const g = GREETINGS[Math.random() * GREETINGS.length | 0][0]; if (G.time - (p.greeted || -99) > 60) { p.greeted = G.time; S.greeted++; G.reward({ love: 1 }); } ui.say(x('passer'), L(g)); return; } } }
   }
   ui.setPrompt(prompt, key);
   // parchemins
-  if (!busyScroll && !m.active) for (let i = G.scrollItems.length - 1; i >= 0; i--) { const s = G.scrollItems[i]; if (Math.hypot(s.x - pp.x, s.z - pp.z) < 1.8) { G.scene.remove(s.mesh); G.scrollItems.splice(i, 1); S.scrolls[s.id] = 1; if (!S.verses.includes(s.verse)) S.verses.push(s.verse); busyScroll = true; sfx('pick'); G.reward({ wisdom: 3 }, true); ui.read(VERSES[s.verse], x('scroll')).then(() => { busyScroll = false; save(); }); break; } }
+  if (!busyScroll && !m.active) for (let i = G.scrollItems.length - 1; i >= 0; i--) { const s = G.scrollItems[i]; if (Math.hypot(s.x - pp.x, s.z - pp.z) < 1.8) { G.scene.remove(s.mesh); G.scrollItems.splice(i, 1); S.scrolls[s.id] = 1; if (!S.verses.includes(s.verse)) S.verses.push(s.verse); busyScroll = true; audio.sfx('pick'); G.reward({ wisdom: 3 }); ui.read(VERSES[s.verse], x('scroll')).then(() => { busyScroll = false; save(); }); break; } }
   inp.take('KeyE'); inp.take('KeyF');
 }
-const TALK = ['Parler', 'Talk'], START = ['Commencer', 'Start'];
 
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, clock.getDelta()); G.time += dt;
   if (!G.world || !G.player || G.switching) { renderer.render(G.scene, camera); return; }
-  const pl = G.player, inp = G.input, playing = G.state === 'play'; inp.update();
+  const pl = G.player, inp = G.input, eco = G.eco, playing = G.state === 'play'; inp.update();
   if (ui.busy && (inp.take('KeyE') || inp.take('Space') || inp.take('Enter'))) ui.advance();
   const frozen = !playing || ui.busy > 0;
   if (playing && !ui.busy && inp.take('Tab')) phone(0);
-  if (G.state === 'charsel' || G.state === 'menu') { pl.yaw += dt * (G.state === 'menu' ? 0.06 : 0); }
-  const peds = G.crowd.obstacles();
-  pl.pedBrake = false; pl.update(dt, inp, frozen, G.traffic.cars.concat(G.vehicles), pl.vehicle ? peds : []);
+  if (G.state === 'menu') pl.yaw += dt * 0.06;
+  const peds = G.crowd.obstacles(), units = eco.vehicles(), all = G.traffic.cars.concat(G.vehicles, units);
+  pl.pedBrake = false; pl.update(dt, inp, frozen, all, pl.vehicle ? peds : []);
   if (pl.pedBrake && G.time - pedToast > 8) { pedToast = G.time; ui.toast(x('peds')); }
-  const pinfo = { x: pl.pos.x, z: pl.pos.z, inVehicle: !!pl.vehicle };
-  G.crowd.update(dt, pinfo);
-  G.traffic.update(dt, peds.concat([{ x: pl.pos.x, z: pl.pos.z, r: pl.vehicle ? pl.vehicle.radius : 0.4 }], G.vehicles.filter(v => !v.rider).map(v => ({ x: v.pos.x, z: v.pos.z, r: v.radius }))), pl.pos);
+  G.crowd.update(dt, { x: pl.pos.x, z: pl.pos.z, inVehicle: !!pl.vehicle });
+  const me = { x: pl.pos.x, z: pl.pos.z, r: pl.vehicle ? pl.vehicle.radius : 0.4, ref: pl.vehicle }, parked = G.vehicles.filter(v => !v.rider).map(v => ({ x: v.pos.x, z: v.pos.z, r: v.radius, ref: v }));
+  G.traffic.update(dt, peds.concat([me], parked, eco.obstacles()), pl.pos);
+  eco.update(dt, peds.concat(parked, G.traffic.cars.map(c => ({ x: c.pos.x, z: c.pos.z, r: c.radius, ref: c }))));
   for (const v of G.vehicles) { v.marker.visible = !v.rider; v.marker.position.set(v.pos.x, 0, v.pos.z); v.marker.userData.dia.rotation.y += dt * 2; }
-  for (const s of G.scrollItems) { s.mesh.userData.box.rotation.y += dt * 2; }
+  for (const s of G.scrollItems) s.mesh.userData.box.rotation.y += dt * 2;
   G.missions.update(dt);
   if (playing && !ui.busy) interact(); else ui.setPrompt(null);
-  // objectif
+  // objectif et tableau de bord
   const m = G.missions; hudT -= dt;
-  if (hudT <= 0 && playing) { hudT = 0.3; let title, text, tg = null;
-    if (m.active) { title = L(m.active.def.title); text = m.objective || '…'; if (m.timer > 0) text += `  ⏱ ${Math.ceil(m.timer)} s`; let bd = 1e9; for (const q of m.targets) { const d = Math.hypot(q.x - pl.pos.x, q.z - pl.pos.z); if (d < bd) { bd = d; tg = q; } } }
+  if (hudT <= 0 && playing) { hudT = 0.3; let title, text, tg = null; const es = eco.status();
+    if (m.active) { title = L(m.active.def.title); text = m.objective || '…'; if (m.timer > 0) text += `  ⏱ ${Math.ceil(m.timer)} s`; tg = G.currentGoal(); }
+    else if (es) { title = es.title; text = es.text; if (es.x !== undefined) tg = es; }
     else { const g = m.idleGoal(); title = g.title; text = g.text; if (g.x !== undefined) tg = g; }
     if (tg) text += ` — ${Math.round(Math.hypot(tg.x - pl.pos.x, tg.z - pl.pos.z))} m`;
     const street = G.world.streetAt(pl.pos.x, pl.pos.z); $('cityname').textContent = street ? `${street} · ${G.world.cityName()}` : `${G.world.cityName()} · ${L(G.world.cfg.country)}`;
-    ui.setObjective(text, title); G.goalT = m.active ? tg : null; }
+    ui.setObjective(text, title); G.goalT = m.active ? tg : null; G.refreshHud();
+    const own = pl.vehicle && pl.vehicle.owned ? pl.vehicle : null; ui.show('fuel', !!own); if (own) { const f = own.fuel / own.tank; $('fuel-bar').style.width = Math.round(f * 100) + '%'; $('fuel').classList.toggle('low', f < 0.15); }
+    if (ui.touch) { ui.show('tb-job', !!own); ui.show('tb-horn', !!pl.vehicle); }
+  }
   if (G.goalT && playing) { goal.visible = true; goal.position.set(G.goalT.x, 0, G.goalT.z); goal.userData.dia.rotation.y += dt * 2; } else goal.visible = false;
   G.world.update(dt, G.time); updateSky(dt);
   sun.target.position.set(pl.pos.x, 0, pl.pos.z); sun.position.copy(sunDir).multiplyScalar(180).add(sun.target.position);
   sky.position.copy(camera.position);
+  const ac = audio.ctxState; ac.inVehicle = !!pl.vehicle; ac.speed = pl.speed; ac.moto = !!(pl.vehicle && pl.vehicle.isMoto); ac.busy = ui.busy > 0; ac.night = G.night || 0; ac.shore = G.world.shore ? Math.max(0, 1 - Math.max(0, G.world.shoreZ(pl.pos.x) - pl.pos.z) / 160) : 0; audio.update(dt);
   mmT -= dt; if (mmT <= 0 && playing) { mmT = 0.1; drawMinimap(); }
-  saveT += dt; if (saveT > 12 && playing && !m.active) { saveT = 0; S.pos = { c: S.city, x: pl.pos.x, z: pl.pos.z }; save(); }
+  saveT += dt; if (saveT > 12 && playing && !m.active && !eco.ride) { saveT = 0; S.pos = { c: S.city, x: pl.pos.x, z: pl.pos.z }; save(); }
   renderer.render(G.scene, camera);
 }
 
 // ---------- Démarrage ----------
 async function boot() {
-  load(); if (params.get('lang')) S.lang = params.get('lang'); ui.init(); applyQuality(); $('loadtext').textContent = T('loading');
+  load(); if (params.get('lang')) S.lang = params.get('lang'); ui.init(); applyQuality(); audio.init(); $('loadtext').textContent = T('loading');
+  audio.onTrack = (text, gold) => { if (G.state === 'play') ui.toast(text, !!gold, gold ? 6000 : 3600); };
+  addEventListener('pointerdown', () => audio.unlock(), { once: true }); addEventListener('keydown', () => audio.unlock(), { once: true });
   requestAnimationFrame(frame);
   try {
     progress(0.1); await loadAnimations(); progress(0.2);
     await enterCity(CITIES[S.city] ? S.city : 'lome', 'saved');
   } catch (e) { console.error(e); $('loadtext').textContent = 'Erreur : ' + (e.message || e); return; }
   ui.show('loading', false); showMenu();
-  $('btn-continue').onclick = () => { sfx('tap'); ui.show('menu', false); if (!S.started) openCharsel(true); else startPlay(); };
-  $('btn-new').onclick = async () => { const r = await ui.modal(`<p>${x('confirmNew')}</p>`, [x('no'), x('yes')]); if (r === 1) { reset(); S.started = false; ui.show('menu', false); ui.show('loading'); G.player.ch.dispose(); G.player.ch = null; await enterCity('lome', 'new'); ui.show('loading', false); openCharsel(true); } };
+  $('btn-continue').onclick = () => { audio.unlock(); audio.sfx('tap'); ui.show('menu', false); if (!S.started) openCharsel(true); else startPlay(); };
+  $('btn-new').onclick = async () => { const r = await ui.modal(`<p>${x('confirmNew')}</p>`, [x('no'), x('yes')]); if (r === 1) { reset(); S.started = false; ui.show('menu', false); ui.show('loading'); if (G.player.vehicle) G.player.exit(); G.player.ch.dispose(); G.player.ch = null; await enterCity('lome', 'new'); ui.show('loading', false); openCharsel(true); } };
   $('btn-lang').onclick = () => { S.lang = S.lang === 'fr' ? 'en' : 'fr'; save(); showMenu(); };
   window.READY = true;
 }

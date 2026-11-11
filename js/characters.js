@@ -106,6 +106,12 @@ async function loadBase(id) {
   return p;
 }
 
+const _up = new THREE.Vector3(0, 1, 0), _f = new THREE.Vector3(), _l = new THREE.Vector3(), _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion();
+const _s0 = new THREE.Vector3(), _e0 = new THREE.Vector3(), _h0 = new THREE.Vector3(), _d = new THREE.Vector3(), _p = new THREE.Vector3(), _e1 = new THREE.Vector3(), _t1 = new THREE.Vector3(), _d2 = new THREE.Vector3(), _d3 = new THREE.Vector3();
+function applyW(bone, qd) { bone.getWorldQuaternion(_q2).premultiply(qd); bone.parent.getWorldQuaternion(_q3); bone.quaternion.copy(_q3.invert().multiply(_q2)); bone.updateMatrixWorld(true); }
+function rotW(bone, axis, angle) { if (bone) applyW(bone, _q1.setFromAxisAngle(axis, angle)); }
+function aimW(bone, from, to) { applyW(bone, _q1.setFromUnitVectors(from, to)); }
+
 export class Character {
   constructor(id, root) {
     this.id = id; this.def = CHARACTERS[id];
@@ -136,7 +142,25 @@ export class Character {
     if (this.current) this.current.crossFadeTo(a, fade, false);
     this.current = a; this.currentName = name;
   }
-  update(dt) { this.mixer.update(dt); }
+  update(dt) { this.mixer.update(dt); if (this.pose) this.riderPose(this.pose); }
+  bone(n) { return (this.bones || (this.bones = {}))[n] || (this.bones[n] = this.model.getObjectByName(n)); }
+  // posture assise : buste penché, cuisses écartées, mains posées sur des cibles (guidon, volant)
+  riderPose(o) {
+    this.root.updateWorldMatrix(true, true);
+    const F = _f.set(0, 0, 1).applyQuaternion(this.root.getWorldQuaternion(_q1)).normalize(), left = _l.crossVectors(_up, F).normalize();
+    if (o.lean) rotW(this.bone('Bip01_Spine'), left, o.lean);
+    if (o.spread) { rotW(this.bone('Bip01_L_Thigh'), _up, o.spread); rotW(this.bone('Bip01_R_Thigh'), _up, -o.spread); }
+    if (o.hands) { const t = o.hands(); this.solveArm('L', t[0], left, 1); this.solveArm('R', t[1], left, -1); }
+  }
+  solveArm(side, T, left, sign) {
+    const up = this.bone(`Bip01_${side}_UpperArm`), fo = this.bone(`Bip01_${side}_Forearm`), ha = this.bone(`Bip01_${side}_Hand`); if (!up || !fo || !ha) return;
+    const S = up.getWorldPosition(_s0), E0 = fo.getWorldPosition(_e0), H0 = ha.getWorldPosition(_h0), a = S.distanceTo(E0), b = E0.distanceTo(H0);
+    const dir = _d.subVectors(T, S), dist = dir.length(); dir.normalize(); const d = Math.max(0.05, Math.min(a + b - 0.004, dist)), x = (a * a - b * b + d * d) / (2 * d), h = Math.sqrt(Math.max(0, a * a - x * x));
+    const pole = _p.set(0, -0.8, 0).addScaledVector(left, 0.55 * sign); pole.addScaledVector(dir, -pole.dot(dir)).normalize();
+    const E = _e1.copy(S).addScaledVector(dir, x).addScaledVector(pole, h), Tc = _t1.copy(S).addScaledVector(dir, d);
+    aimW(up, _d2.subVectors(E0, S).normalize(), _d3.subVectors(E, S).normalize());
+    fo.getWorldPosition(E0); ha.getWorldPosition(H0); aimW(fo, _d2.subVectors(H0, E0).normalize(), _d3.subVectors(Tc, E0).normalize());
+  }
   dispose() { this.mixer.stopAllAction(); this.root.removeFromParent(); }
 }
 

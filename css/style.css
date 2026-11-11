@@ -100,3 +100,15 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 #fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .6s;z-index:50}
 #fade.on{opacity:1;pointer-events:auto}
 @media (max-height:480px){#topright{transform:scale(.85);transform-origin:top right}#objective{font-size:12px}#joy{width:110px;height:110px}}
+
+#st-energy{background:#6fcf7a}
+.hudbtn.second{top:calc(64px + env(safe-area-inset-top));font-size:20px}
+#fuel{position:absolute;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:var(--glass);border-radius:14px;padding:6px 12px;width:min(210px,44vw);pointer-events:none!important;font-size:14px}
+#fuel .meter{height:8px}#fuel-bar{background:#f5c542}#fuel.low #fuel-bar{background:#ef5b6b}
+.tbtn.small{width:52px;height:52px;font-size:20px}
+#tb-job{right:calc(116px + env(safe-area-inset-right));bottom:calc(96px + env(safe-area-inset-bottom))}
+#tb-horn{right:calc(104px + env(safe-area-inset-right));bottom:calc(160px + env(safe-area-inset-bottom))}
+.station{display:flex;gap:10px;align-items:center}.station .ic{font-size:26px;width:36px;text-align:center}
+.opts button.sel{border-color:var(--gold);background:rgba(245,197,66,.2)}
+.sw .pr{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;opacity:.85}
+.swatches{row-gap:20px}

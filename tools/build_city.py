@@ -163,7 +163,22 @@ for k in ['church','market','hospital','school','park','stadium','station','pris
             ang=rnd.random()*6.28; c=(CX+math.cos(ang)*350,CZ+math.sin(ang)*350); nm=''
     pois[k]={'c':[round(c[0],1),round(c[1],1)],'s':snap(c[0],c[1]),'n':nm}
 rivers=[flat(pts(nd)) for nd,t in ways.values() if t.get('waterway')=='river' and len(nd)>1]
-out={'rivers':rivers,'id':cid,'ext':[round(X0),round(Z0),round(X1),round(Z1)],'names':names,'rn':flat(rnl),'roads':roads,'b':blds,'named':named,'water':water,'green':green,'pitch':pitch,'coast':coastl,'pois':pois}
+# stations-service et vendeurs de motos réels
+def spots(pred,maxn):
+    res=[]
+    for src in list(ways.values())+[([i],n[2]) for i,n in nodes.items() if n[2]]:
+        nd,t=src
+        if not pred(t): continue
+        p=pts(nd)
+        if not p: continue
+        c=cen(p)
+        if not (X0+150<c[0]<X1-150 and Z0+150<c[1]<Z1-150): continue
+        if any(math.hypot(c[0]-r[2],c[1]-r[3])<120 for r in res): continue
+        s2=snap(c[0],c[1],5.0); res.append([s2[0],s2[1],c[0],c[1],math.hypot(c[0]-CX,c[1]-CZ)])
+    res.sort(key=lambda r:r[4]); return [[r[0],r[1],round(r[2],1),round(r[3],1)] for r in res[:maxn]]
+fuel=spots(lambda t:t.get('amenity')=='fuel',6)
+dealer=spots(lambda t:t.get('shop') in('motorcycle','car','car_repair','motorcycle_repair'),1)
+out={'fuel':fuel,'dealer':dealer,'rivers':rivers,'id':cid,'ext':[round(X0),round(Z0),round(X1),round(Z1)],'names':names,'rn':flat(rnl),'roads':roads,'b':blds,'named':named,'water':water,'green':green,'pitch':pitch,'coast':coastl,'pois':pois}
 json.dump(out,open(f'/home/user/GTA-Chr-tien/assets/cities/{cid}.json','w'),separators=(',',':'),ensure_ascii=False)
-print(cid,'roads',len(roads),'nodes',len(rnl),'buildings',len(blds),'named',len(named),'water',len(water),'green',len(green),'coast',[len(c)//2 for c in coastl],'ext',out['ext'])
+print(cid,'fuel',len(fuel),'dealer',len(dealer),'roads',len(roads),'nodes',len(rnl),'buildings',len(blds),'named',len(named),'water',len(water),'green',len(green),'coast',[len(c)//2 for c in coastl],'ext',out['ext'])
 for k,v in pois.items(): print(' ',k,v)

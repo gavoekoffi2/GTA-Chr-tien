@@ -246,6 +246,31 @@ export class World {
     for (const k of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, y, 6), m); p.position.set(x + c * k * (w / 2 - 0.2), y / 2, z - s * k * (w / 2 - 0.2)); p.castShadow = true; this.group.add(p); }
   }
 
+  // petit ensemble construit en coordonnées locales puis posé et tourné dans la ville
+  local(x, z, ry, fn) { const B = {}, bk = k => { this.mat(k); return B[k] || (B[k] = new Bucket()); }; fn(bk); const g = new THREE.Group(); for (const k in B) g.add(B[k].mesh(this.mats[k])); g.position.set(x, 0, z); g.rotation.y = ry; this.group.add(g); return g; }
+  // point au bord de la rue la plus proche (pour garer un véhicule) et direction de la rue
+  roadside(x, z, along = 4, inset = -0.9) {
+    const n = this.nodes[this.nearestMain(x, z)]; let e = null, el = 0; for (const q of n.adj) { if (q.cls > 3) continue; const m = this.nodes[q.to], l = Math.hypot(m.x - n.x, m.z - n.z); if (l > el) { el = l; e = q; } } if (!e) { e = n.adj[0]; el = 1; }
+    const m = this.nodes[e.to], l = el || 1, dx = (m.x - n.x) / l, dz = (m.z - n.z) / l, off = (e.w / 2 - inset) * (this.cfg.left ? -1 : 1), k = Math.max(1.5, Math.min(l - 1.5, along));
+    return { x: n.x + dx * k - dz * off, z: n.z + dz * k + dx * off, h: Math.atan2(dx, dz) };
+  }
+  fuelStation(sx, sz, cx, cz) {
+    const rs = this.roadside(sx, sz), h = rs.h, th = h - Math.PI / 2; let dx = cx - sx, dz = cz - sz; const dl = Math.hypot(dx, dz); if (dl > 0.5) { dx /= dl; dz /= dl; } else { dx = -Math.cos(h); dz = Math.sin(h); }
+    let P = { x: sx + dx * 4, z: sz + dz * 4 }; if (!this.free(P.x, P.z, 4)) P = { x: sx, z: sz };
+    const c = Math.cos(th), s = Math.sin(th), W = (lx, lz) => [P.x + lx * c + lz * s, P.z - lx * s + lz * c];
+    this.local(P.x, P.z, th, bk => {
+      bk('tex:concrete').box(-6, 0.03, -4, 6, 0.09, 4, 4, 4);
+      const col = bk('flat:#f2f2ee'), red = bk('flat:#c62828'), dark = bk('metal:#3a3f45');
+      for (const [x, z] of [[-4, -2.2], [4, -2.2], [-4, 2.2], [4, 2.2]]) col.box(x - 0.16, 0.09, z - 0.16, x + 0.16, 4.6, z + 0.16);
+      col.box(-5.6, 4.6, -3.6, 5.6, 4.75, 3.6); red.box(-5.7, 4.75, -3.7, 5.7, 5.2, 3.7); col.top(-5.6, -3.6, 5.6, 3.6, 5.21);
+      for (const x of [-2.3, 2.3]) { dark.box(x - 1.2, 0.09, -0.5, x + 1.2, 0.26, 0.5); for (const px of [-0.55, 0.55]) { red.box(x + px - 0.3, 0.26, -0.24, x + px + 0.3, 1.5, 0.24); col.box(x + px - 0.3, 1.5, -0.24, x + px + 0.3, 1.9, 0.24); dark.box(x + px - 0.2, 1.1, 0.24, x + px + 0.2, 1.4, 0.26); } }
+      red.box(6.2, 0, 2.8, 7.4, 5.4, 3.1);
+    });
+    { const q = W(6.8, 3.14); this.sign([this.T('ESSENCE', 'PETROL'), '700 F / L', this.T('GASOIL', 'DIESEL'), '675 F / L'], q[0], 3.3, q[1], 1.1, 3.6, th, { bg: '#c62828', w: 256, h: 512 }); const q2 = W(0, 3.72); this.sign([this.T('STATION-SERVICE', 'FUEL STATION')], q2[0], 4.98, q2[1], 7, 0.4, th, { bg: '#c62828', border: null, h: 64 }); }
+    for (const x of [-2.3, 2.3]) { const a = W(x - 1.2, -0.5), b = W(x + 1.2, -0.5), d = W(x + 1.2, 0.5), e = W(x - 1.2, 0.5); this.addPoly([a[0], a[1], b[0], b[1], d[0], d[1], e[0], e[1]]); }
+    this.fuelStations.push({ x: P.x, z: P.z });
+  }
+
   // ---------- Construction ----------
   build() {
     const d = this.data, cfg = this.cfg, rng = this.rng, ex = this.ext;
@@ -255,6 +280,11 @@ export class World {
     for (const [cls, nm, one, ids] of d.roads) {
       const w = WIDTH[cls], name = nm >= 0 ? d.names[nm] : '';
       for (let i = 0; i < ids.length - 1; i++) { const a = this.nodes[ids[i]], b = this.nodes[ids[i + 1]]; a.adj.push({ to: ids[i + 1], cls, w, ok: true, name }); b.adj.push({ to: ids[i], cls, w, ok: !one, name }); a.w = Math.max(a.w, w); b.w = Math.max(b.w, w); }
+    }
+    { // composante principale du réseau carrossable
+      const comp = this.comp = new Int32Array(this.nodes.length).fill(-1); let best = -1, bs = 0, c = 0;
+      for (let i = 0; i < this.nodes.length; i++) { if (comp[i] >= 0 || !this.nodes[i].adj.some(e => e.cls <= 3)) continue; let size = 0; const st = [i]; comp[i] = c; while (st.length) { const k = st.pop(); size++; for (const e of this.nodes[k].adj) if (e.cls <= 3 && comp[e.to] < 0) { comp[e.to] = c; st.push(e.to); } } if (size > bs) { bs = size; best = c; } c++; }
+      this.mainComp = best;
     }
     this.nodeGrid = new Map();
     this.nodes.forEach((n, i) => { const k = Math.floor(n.x / 60) + ',' + Math.floor(n.z / 60); let l = this.nodeGrid.get(k); if (!l) this.nodeGrid.set(k, l = []); l.push(i); });
@@ -296,6 +326,7 @@ export class World {
     this.greens = [];
     for (const g of d.green) { const p = flt(g); try { this.bk('tex:grass').poly(p, 0.012, 5); this.greens.push(p); } catch (e) { /* polygone invalide */ } }
     for (const g of d.pitch) { const p = flt(g); try { this.bk('flat:#4f8a3a').poly(p, 0.03, 5); } catch (e) { /* ignore */ } }
+    this.fuelSpots = (d.fuel || []).map(f => { let dx = f[2] - f[0], dz = f[3] - f[1]; const l = Math.hypot(dx, dz); if (l > 0.5) { dx /= l; dz /= l; } else dx = dz = 0; return [f[0] + dx * 4, f[1] + dz * 4]; });
     this.buildRoads();
     this.buildBuildings();
     this.setupPois();
@@ -334,6 +365,7 @@ export class World {
       for (let i = 0; i < n * 2; i++) p[i] = b[i + 2] / 10;
       let ar = 0, cx = 0, cz = 0; for (let i = 0; i < n; i++) { const j = (i + 1) % n; ar += p[i * 2] * p[j * 2 + 1] - p[j * 2] * p[i * 2 + 1]; cx += p[i * 2]; cz += p[i * 2 + 1]; }
       ar = Math.abs(ar / 2); cx /= n; cz /= n;
+      if (this.fuelSpots.some(f => Math.hypot(f[0] - cx, f[1] - cz) < 13 + Math.sqrt(ar) * 0.5)) continue;
       const color = kind === 1 ? '#f4f0e6' : cfg.walls[rng() * cfg.walls.length | 0];
       const style = cfg.style && lv < 9 ? cfg.style : lv >= 7 ? (rng() < 0.55 ? 'glass' : 'modern') : lv >= 4 && rng() < 0.4 ? 'modern' : 'plaster';
       const shops = kind === 0 && lv >= 2 && ar > 90 && rng() < (cfg.style ? 0.6 : 0.45);
@@ -396,6 +428,13 @@ export class World {
     this.bk('tin:#8e2f25').hip(cb.cx - 2.8, cb.cz - 2.8, cb.cx + 2.8, cb.cz + 2.8, H, 5.5);
     const cr = this.bk('flat:#ffffff'); cr.box(cb.cx - 0.16, H + 5.3, cb.cz - 0.16, cb.cx + 0.16, H + 9, cb.cz + 0.16); cr.box(cb.cx - 1.1, H + 7.3, cb.cz - 0.16, cb.cx + 1.1, H + 7.65, cb.cz + 0.16); cr.box(cb.cx - 0.16, H + 7.3, cb.cz - 1.1, cb.cx + 0.16, H + 7.65, cb.cz + 1.1);
     this.landmark(this.pois.landmark);
+    // stations-service (réelles d'après la carte, complétées si besoin) et vendeur de motos
+    this.fuelStations = []; const fl = (d.fuel || []).slice();
+    for (let k = 0; fl.length < 2 && k < 60; k++) { const a = k * 2.4, r = 220 + k * 25, n = this.nodes[this.nearestMain(ch.x + Math.cos(a) * r, ch.z + Math.sin(a) * r)]; if (n.adj.some(e => e.cls <= 2) && fl.every(f => Math.hypot(f[0] - n.x, f[1] - n.z) > 250)) { const s = this.roadside(n.x, n.z, 8, -5); fl.push([s.x, s.z, s.x, s.z]); } }
+    for (const f of fl) this.fuelStation(f[0], f[1], f[2], f[3]);
+    { const mk = this.pois.market, dd = (d.dealer || [])[0]; let x, z, cx, cz; if (dd) [x, z, cx, cz] = dd; else { const s = this.roadside(mk.x + 130, mk.z + 70, 6, -2.4); x = s.x; z = s.z; cx = x; cz = z + 4; }
+      const f = this.freeNear(x, z, 1), face = Math.atan2(cx - f.x, cz - f.z); this.pois.dealer = { x: f.x, z: f.z, cx, cz, face, name: '' };
+      this.board([this.T('MOTOS & AUTOS', 'BIKES & CARS'), this.T('VENTE — OCCASION', 'USED — FOR SALE')], f.x + Math.sin(face) * 1.4, f.z + Math.cos(face) * 1.4, face + Math.PI, 7, 2, 4.4, { bg: '#1c2b3a', h: 150, border: '#f5c542' }); }
   }
 
   landmark(lm) {
@@ -566,6 +605,21 @@ export class World {
   }
   nodesNear(x, z, r) { const out = [], g = Math.ceil(r / 60), cx = Math.floor(x / 60), cz = Math.floor(z / 60); for (let a = cx - g; a <= cx + g; a++) for (let b = cz - g; b <= cz + g; b++) { const l = this.nodeGrid.get(a + ',' + b); if (l) for (const i of l) { const n = this.nodes[i]; if ((n.x - x) ** 2 + (n.z - z) ** 2 <= r * r) out.push(i); } } return out; }
   nearestNode(x, z, maxCls = 5) { for (let r = 60; r < 1500; r *= 2) { let best = -1, bd = 1e12; for (const i of this.nodesNear(x, z, r)) { const n = this.nodes[i]; if (!n.adj.some(e => e.cls <= maxCls)) continue; const d = (n.x - x) ** 2 + (n.z - z) ** 2; if (d < bd) { bd = d; best = i; } } if (best >= 0) return best; } return 0; }
+  // nœud carrossable le plus proche dans le réseau principal
+  nearestMain(x, z) { for (let r = 60; r < 3000; r *= 2) { let best = -1, bd = 1e12; for (const i of this.nodesNear(x, z, r)) { if (this.comp[i] !== this.mainComp) continue; const n = this.nodes[i], d = (n.x - x) ** 2 + (n.z - z) ** 2; if (d < bd) { bd = d; best = i; } } if (best >= 0) return best; } return this.nearestNode(x, z, 3); }
+  // plus court chemin (A*) entre deux nœuds ; renvoie la liste des nœuds ou null
+  findPath(from, to, oneway = true) {
+    if (from === to) return [from]; const N = this.nodes, g = new Float32Array(N.length).fill(Infinity), came = new Int32Array(N.length).fill(-1), closed = new Uint8Array(N.length), f = new Float32Array(N.length), open = [from], T = N[to];
+    g[from] = 0; f[from] = Math.hypot(N[from].x - T.x, N[from].z - T.z);
+    while (open.length) {
+      let bi = 0; for (let i = 1; i < open.length; i++) if (f[open[i]] < f[open[bi]]) bi = i; const cur = open[bi]; open[bi] = open[open.length - 1]; open.pop();
+      if (cur === to) { const path = [to]; let k = to; while (came[k] >= 0) { k = came[k]; path.push(k); } return path.reverse(); }
+      if (closed[cur]) continue; closed[cur] = 1; const a = N[cur];
+      for (const e of a.adj) { if (e.cls > 3 || (oneway && !e.ok) || closed[e.to]) continue; const b = N[e.to], ng = g[cur] + Math.hypot(b.x - a.x, b.z - a.z) * (e.cls <= 2 ? 1 : 1.3); if (ng < g[e.to]) { g[e.to] = ng; came[e.to] = cur; f[e.to] = ng + Math.hypot(b.x - T.x, b.z - T.z); open.push(e.to); } }
+    }
+    return oneway ? this.findPath(from, to, false) : null;
+  }
+  pathLength(path) { let l = 0; for (let i = 0; i < path.length - 1; i++) l += Math.hypot(this.nodes[path[i + 1]].x - this.nodes[path[i]].x, this.nodes[path[i + 1]].z - this.nodes[path[i]].z); return l; }
   onRoad(x, z) { for (const i of this.nodesNear(x, z, 70)) { const n = this.nodes[i]; for (const e of n.adj) { const m = this.nodes[e.to], dx = m.x - n.x, dz = m.z - n.z, L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - n.x) * dx + (z - n.z) * dz) / L2)); if (Math.hypot(x - n.x - dx * t, z - n.z - dz * t) < e.w / 2 + 1) return e; } } return null; }
   streetAt(x, z) { let best = '', bd = 30; for (const i of this.nodesNear(x, z, 80)) { const n = this.nodes[i]; for (const e of n.adj) { if (!e.name) continue; const m = this.nodes[e.to], dx = m.x - n.x, dz = m.z - n.z, L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - n.x) * dx + (z - n.z) * dz) / L2)), d = Math.hypot(x - n.x - dx * t, z - n.z - dz * t); if (d < bd) { bd = d; best = e.name; } } } return best; }
   // point libre le long d'une rue, près de (x,z)

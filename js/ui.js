@@ -146,7 +146,7 @@ export const ui = {
     if (r.faith) a.push(`<span style="color:#f5c542">✝ +${r.faith} ${T('faith')}</span>`);
     if (r.love) a.push(`<span style="color:#ef5b6b">♥ +${r.love} ${T('love')}</span>`);
     if (r.wisdom) a.push(`<span style="color:#5fb7f0">✦ +${r.wisdom} ${T('wisdom')}</span>`);
-    if (r.talents) a.push(`<span>🪙 +${r.talents} ${T('talents')}</span>`);
+    const m = (r.talents || 0) * 50 + (r.money || 0); if (m) a.push(`<span>🪙 +${money(m)}</span>`);
     return `<div class="rewards">${a.join('')}</div>`;
   },
   missionComplete(title, lesson, verse, r) {
@@ -159,7 +159,8 @@ export const ui = {
   hud(gradeName, gradeIcon) {
     const cap = v => Math.min(100, v) + '%';
     $('st-faith').style.width = cap(S.stats.faith / 3); $('st-love').style.width = cap(S.stats.love / 3); $('st-wisdom').style.width = cap(S.stats.wisdom / 3);
-    $('talents').textContent = `🪙 ${S.talents} ${T('talents')}`; $('grade-name').textContent = gradeName; $('grade-icon').textContent = gradeIcon;
+    $('st-energy').style.width = cap(S.energy); $('talents').textContent = '🪙 ' + money(S.money); $('grade-name').textContent = gradeName; $('grade-icon').textContent = gradeIcon;
   },
 };
+export const money = n => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f') + ' F';
 export function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

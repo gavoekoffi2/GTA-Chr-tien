@@ -4,6 +4,7 @@ import { ui, T } from './ui.js';
 import { MISSIONS, WALK_MISSIONS, VERSES, GRADES } from './content.js';
 import { CITIES } from './world.js';
 import { makeMarker, makeItem } from './npc.js';
+import { audio } from './audio.js';
 
 const CANCEL = { cancel: true };
 const TXT = {
@@ -11,7 +12,7 @@ const TXT = {
   waitFor: ['Attends ton compagnon !', 'Wait for your companion!'], walkNext: ['La Marche', 'The Walk'], cityNext: ['Lumière dans la ville', 'Light in the city'],
   travel: ['Rends-toi à la gare pour voyager vers', 'Go to the station to travel to'], allDone: ['Toutes les missions de cette ville sont accomplies. Explore, salue les habitants, cherche les parchemins !', 'All missions in this city are complete. Explore, greet people, look for the scrolls!'],
   hymn: [['♪ À toi la gloire, ô Ressuscité !', '♪ Thine be the glory, risen, conquering Son!'], ['♪ À toi la victoire pour l’éternité !', '♪ Endless is the victory Thou o’er death hast won!'], ['♪ Alléluia ! Alléluia !', '♪ Hallelujah! Hallelujah!']],
-  car: ['Ta voiture (garée devant chez toi)', 'Your car (parked outside your home)'], wax: ['Tenues en pagne', 'Wax-print outfits'], crown: ['Tenue dorée', 'Golden outfit'],
+  moto: ['La moto de Frère Kodjo : un cadeau de l’église pour toi !', 'Brother Kodjo’s motorbike: a gift from the church to you!'], wax: ['', ''], crown: ['', ''],
 };
 const t = k => L(TXT[k]);
 
@@ -92,7 +93,7 @@ export class Missions {
       async memorize(id) { chk(); await ui.memorize(VERSES[id]); G.reward({ wisdom: 5 }, true); chk(); },
       async quiz(qs) { chk(); const s = await ui.quiz(qs); G.reward({ wisdom: s * 2 }, true); chk(); return s; },
       async ask(q) { chk(); return ui.ask(q); },
-      async worship() { chk(); G.player.override = 'claphands_01'; for (const h of TXT.hymn) { ui.toast(L(h), true, 3200); await m.wait(3.2); } G.player.override = null; },
+      async worship() { chk(); G.player.override = 'claphands_01'; audio.playOnce('holy_holy_holy'); for (const h of TXT.hymn) { ui.toast(L(h), true, 3200); await m.wait(3.2); } await m.wait(4); G.player.override = null; audio.stopOnce(); },
       wait(s) { let e = 0; return self.wait(dt => (e += dt) >= s); },
       toast(tx) { ui.toast(L(tx), true); }, toastBig(title, tx) { ui.toast(`${L(title)} — ${L(tx)}`, true, 6500); },
       anim(target, name) { if (target === 'player') G.player.override = name; else target.ch.play(name || target.base, 0.3); },
@@ -112,8 +113,8 @@ export class Missions {
     await ui.missionComplete(L(def.title), L(def.lesson), VERSES[def.verse], r);
     if (def.mode === 'walk' && WALK_MISSIONS.filter(x => x.grade === def.grade).every(x => S.done[x.id]) && S.grade < def.grade) {
       S.grade = def.grade; const un = Object.values(CITIES).filter(c => c.grade === def.grade && def.grade > 0).map(c => L(c.name));
-      if (def.grade === 2) un.push(t('car')); if (def.grade === 4) un.push(t('wax')); if (def.grade === 7) un.push(t('crown'));
-      S.talents += 50; this.G.sfx('grade'); await ui.gradeUp(GRADES[def.grade], un); this.G.onGrade();
+      if (def.grade === 1 && !S.owned.moto) un.push(t('moto'));
+      this.G.reward({ money: 2500 }, true); this.G.sfx('grade'); await ui.gradeUp(GRADES[def.grade], un); this.G.onGrade();
     }
     save(); this.G.refreshHud();
   }
