@@ -7,6 +7,15 @@ Un jeu en monde ouvert qui édifie : on incarne un personnage africain qui march
 - **7 villes réelles** : Lomé, Cotonou, Accra, Abidjan, Lagos, Paris, Londres. Les rues, les bâtiments et les côtes viennent d'OpenStreetMap.
 - Français par défaut, anglais au choix. Jouable sur ordinateur, tablette et téléphone.
 
+## Nouveautés de la version 2
+
+- **Véhicules réalistes** : berline, taxi, citadine, 4x4, pick-up, minibus avec galerie, bus, et la moto 125 des zémidjans. Le joueur est visible sur sa moto et au volant.
+- **Zémidjans et taxis** : on choisit sa destination, on discute le prix, et le trajet suit les vraies rues.
+- **Argent (F CFA)** : bouteilles à recycler, livraisons, travail de zémidjan avec sa propre moto. Dépenses : transport, carburant, repas, vêtements chez le tailleur, billets de voyage, offrandes.
+- **Carburant** : jauge et stations-service placées aux vrais emplacements de la carte.
+- **Radios** : Radio Akwaba, Radio Cantiques, Radio Paix, Radio Jeunesse, et « Ma musique » pour ses propres chansons.
+- **Ville plus vivante** : façades variées avec relief, boutiques, murs de clôture, poteaux et fils électriques, véhicules garés, vendeuses sous parasol, kiosques, rues en terre hors du centre.
+
 ## Lancer le jeu
 
 Le jeu est un site statique, sans étape de compilation. Il faut le servir par HTTP :
@@ -26,7 +35,10 @@ Puis ouvrir `http://localhost:8000`. Il peut aussi être publié tel quel sur Gi
 | Regarder | glisser la souris | glisser à droite |
 | Action (parler, saluer, voyager) | E | bouton E |
 | Monter / descendre du véhicule | F | bouton 🚗 |
-| Menu (missions, Bible, grades, options) | Tab | bouton ☰ |
+| Changer de radio | R | bouton 📻 |
+| Klaxon | H | bouton 📯 |
+| Travailler comme zémidjan (sur sa moto) | J | bouton 💼 |
+| Menu (missions, Bible, grades, musique, options) | Tab | bouton ☰ |
 
 ## Organisation
 
@@ -40,5 +52,6 @@ Puis ouvrir `http://localhost:8000`. Il peut aussi être publié tel quel sur Gi
 
 - Plans des villes : © les contributeurs d'OpenStreetMap, licence ODbL.
 - Personnages et animations : Microsoft Rocketbox Avatar Library, licence MIT.
+- Musique : Kevin MacLeod (incompetech.com), licence Creative Commons Attribution 4.0 ; cantiques du projet Open Hymnal (domaine public).
 - Textures : Poly Haven, CC0. Texture d'eau et moteur 3D : three.js, licence MIT.
 - Versets : Louis Segond 1910 et King James Version (domaine public).

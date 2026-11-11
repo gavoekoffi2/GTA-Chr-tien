@@ -82,13 +82,13 @@ function updateSky(dt, force) {
   const day = THREE.MathUtils.smoothstep(sv, -0.05, 0.35), night = 1 - THREE.MathUtils.smoothstep(sv, -0.12, 0.12);
   sunDir.setFromSphericalCoords(1, Math.PI / 2 - Math.max(0.06, el), az);
   const u = sky.material.uniforms; u.sunPosition.value.setFromSphericalCoords(1, Math.PI / 2 - el, az); u.turbidity.value = 5; u.rayleigh.value = 1.3 + (1 - day) * 1.5; u.mieCoefficient.value = 0.006; u.mieDirectionalG.value = 0.8;
-  sun.intensity = 0.25 + day * 3.0; sun.color.setHSL(0.09, 0.35 + (1 - day) * 0.4, 0.5 + day * 0.42); hemi.intensity = 0.32 + day * 0.5;
-  renderer.toneMappingExposure = 0.34 + day * 0.1 + night * 0.25;
+  sun.intensity = 0.2 + day * 2.3; sun.color.setHSL(0.09, 0.35 + (1 - day) * 0.4, 0.5 + day * 0.42); hemi.intensity = 0.28 + day * 0.34;
+  renderer.toneMappingExposure = 0.4 + day * 0.12 + night * 0.25;
   G.scene.fog.color.setRGB(0.1 + day * 0.56, 0.13 + day * 0.63, 0.2 + day * 0.68);
   G.night = night; if (G.world) G.world.setNight(night); setVehicleNight(night);
   envTimer += dt;
   if (force || envTimer > (Q === 'low' ? 60 : 20)) { envTimer = 0; const u2 = sky2.material.uniforms; for (const k of ['sunPosition', 'turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) { if (u2[k].value.copy) u2[k].value.copy(u[k].value); else u2[k].value = u[k].value; }
-    const rt = pmrem.fromScene(skyScene, 0, 1, 2000); if (envRT) envRT.dispose(); envRT = rt; G.scene.environment = rt.texture; G.scene.environmentIntensity = 0.55; }
+    const rt = pmrem.fromScene(skyScene, 0, 1, 2000); if (envRT) envRT.dispose(); envRT = rt; G.scene.environment = rt.texture; G.scene.environmentIntensity = 0.4; }
 }
 
 // ---------- Ville ----------

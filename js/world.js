@@ -1,6 +1,8 @@
 // Villes réelles : le plan (rues, bâtiments, côte) vient d'OpenStreetMap © les contributeurs d'OpenStreetMap (ODbL).
 import * as THREE from 'three';
 import { S, L } from './state.js';
+import { facadeTex, shopTex, wallTex, leafTex } from './facades.js';
+import { decorate } from './citylife.js';
 
 export const WIDTH = [14, 11, 9, 7, 4.5, 2.5];
 export const CITIES = {
@@ -216,11 +218,11 @@ export class World {
     else if (type === 'metal') m = new THREE.MeshStandardMaterial({ color: arg, roughness: 0.4, metalness: 0.8 });
     else if (type === 'facade' || type === 'shop') {
       const [style, color] = arg.split('|');
-      const t = type === 'shop' ? shopCanvas(color, this.cfg.en ? SHOPS_EN : SHOPS_FR, this.rng) : facadeCanvas(style, color, this.rng);
-      m = new THREE.MeshStandardMaterial({ map: t.map, emissiveMap: t.emap, emissive: 0xffffff, emissiveIntensity: 0, roughness: style === 'glass' ? 0.12 : 0.88, metalness: style === 'glass' ? 0.75 : 0 });
-      if (style !== 'glass') m.normalMap = ptex('plaster_n');
+      const res = this.q === 'high' ? 1024 : 512, t = type === 'shop' ? shopTex(color, this.cfg.en ? SHOPS_EN : SHOPS_FR, this.rng, res) : facadeTex(style, color, this.rng, res);
+      m = new THREE.MeshStandardMaterial({ map: t.map, emissiveMap: t.emap, emissive: 0xffffff, emissiveIntensity: 0, normalMap: t.nmap, roughness: style === 'glass' ? 0.12 : 0.9, metalness: style === 'glass' ? 0.7 : 0 });
       this.nightMats.push(m);
     }
+    else if (type === 'wall') { const t = wallTex(arg, this.rng, !this.cfg.en); m = new THREE.MeshStandardMaterial({ map: t.map, normalMap: t.nmap, roughness: 0.93 }); }
     this.mats[k] = m; return m;
   }
   bk(k, x, z) { this.mat(k); const kk = x === undefined ? k : k + '@' + Math.floor(x / 420) + ',' + Math.floor(z / 420); if (!this.buckets[kk]) this.buckets[kk] = new Bucket(); return this.buckets[kk]; }
@@ -331,6 +333,7 @@ export class World {
     this.buildBuildings();
     this.setupPois();
     this.props();
+    decorate(this);
     for (const k in this.buckets) { if (!this.buckets[k].i.length) continue; const m = this.buckets[k].mesh(this.mats[k.split('@')[0]]); if (/asphalt|mark|pave|laterite|sand|grass|water|concrete$/.test(k) && !k.startsWith('plaster')) m.castShadow = false; if (k === 'mark') m.renderOrder = 2; this.group.add(m); }
     this.buildInstances();
     this.drawMap();
@@ -343,16 +346,21 @@ export class World {
     const mk = this.buckets['mark'] = new Bucket();
     const dirt = 'tex:pave';
     const disc = (b, x, z, r, y) => { for (let k = 0; k < 8; k++) { const a0 = k * Math.PI / 4, a1 = a0 + Math.PI / 4; b.tri([x, y, z], [x + Math.cos(a0) * r, y, z + Math.sin(a0) * r], [x + Math.cos(a1) * r, y, z + Math.sin(a1) * r], 6); } };
+    { // revêtement : grands axes goudronnés ; les petites rues loin du centre restent en terre (villes sablonneuses)
+      const pc = this.data.pois.church.c, sandy = this.cfg.ground === 'laterite';
+      this.nodes.forEach(n => { for (const e of n.adj) { const m = this.nodes[e.to], h = Math.abs(Math.sin((Math.min(n.x, m.x) * 12.9898 + Math.min(n.z, m.z) * 78.233)) * 43758.5453) % 1; e.paved = e.cls <= 2 || (e.cls === 3 && (!sandy || Math.hypot((n.x + m.x) / 2 - pc[0], (n.z + m.z) / 2 - pc[1]) < 520 || h < 0.22)); } });
+    }
     this.nodes.forEach((n, i) => {
       for (const e of n.adj) {
         if (e.to < i && this.nodes[e.to].adj.some(x => x.to === i)) { if (!(e.to < i)) continue; }
         if (e.to > i) continue; const m = this.nodes[e.to];
-        if (e.cls <= 3) { this.bk('tex:pave', n.x, n.z).ribbon(n.x, n.z, m.x, m.z, e.w + 5, 0.02); this.bk('tex:asphalt', n.x, n.z).ribbon(n.x, n.z, m.x, m.z, e.w, 0.05); }
+        if (e.paved) { this.bk('tex:pave', n.x, n.z).ribbon(n.x, n.z, m.x, m.z, e.w + 5, 0.02); this.bk('tex:asphalt', n.x, n.z).ribbon(n.x, n.z, m.x, m.z, e.w, 0.05); }
+        else if (e.cls <= 3) this.bk('tex:sand', n.x, n.z).ribbon(n.x, n.z, m.x, m.z, e.w - 0.6, 0.03);
         else this.bk(dirt, n.x, n.z).ribbon(n.x, n.z, m.x, m.z, e.w, 0.03);
         if (e.cls <= 2) { const l = Math.hypot(m.x - n.x, m.z - n.z); if (l > 6) { const dx = (m.x - n.x) / l, dz = (m.z - n.z) / l, nx = -dz * 0.11, nz = dx * 0.11; const a = [n.x + dx * 2, n.z + dz * 2], b = [m.x - dx * 2, m.z - dz * 2];
           mk.quad([a[0] - nx, 0.06, a[1] - nz], [a[0] + nx, 0.06, a[1] + nz], [b[0] + nx, 0.06, b[1] + nz], [b[0] - nx, 0.06, b[1] - nz], 0, 0, 1, (l - 4) / 7); const N = mk.n.length; if (mk.n[N - 2] < 0) for (let q = 1; q <= 12; q++) mk.n[N - q] *= -1; } }
       }
-      if (n.adj.length) { const c = Math.min(...n.adj.map(e => e.cls)); if (c <= 3) { disc(this.bk('tex:pave', n.x, n.z), n.x, n.z, n.w / 2 + 2.5, 0.02); disc(this.bk('tex:asphalt', n.x, n.z), n.x, n.z, n.w / 2, 0.05); } else disc(this.bk(dirt, n.x, n.z), n.x, n.z, n.w / 2, 0.03); }
+      if (n.adj.length) { const c = Math.min(...n.adj.map(e => e.cls)); if (n.adj.some(e => e.paved)) { disc(this.bk('tex:pave', n.x, n.z), n.x, n.z, n.w / 2 + 2.5, 0.02); disc(this.bk('tex:asphalt', n.x, n.z), n.x, n.z, n.w / 2, 0.05); } else disc(this.bk(c <= 3 ? 'tex:sand' : dirt, n.x, n.z), n.x, n.z, n.w / 2 - (c <= 3 ? 0.3 : 0), 0.03); }
     });
     this.mats['mark'].side = THREE.DoubleSide;
   }
@@ -366,16 +374,22 @@ export class World {
       let ar = 0, cx = 0, cz = 0; for (let i = 0; i < n; i++) { const j = (i + 1) % n; ar += p[i * 2] * p[j * 2 + 1] - p[j * 2] * p[i * 2 + 1]; cx += p[i * 2]; cz += p[i * 2 + 1]; }
       ar = Math.abs(ar / 2); cx /= n; cz /= n;
       if (this.fuelSpots.some(f => Math.hypot(f[0] - cx, f[1] - cz) < 13 + Math.sqrt(ar) * 0.5)) continue;
-      const color = kind === 1 ? '#f4f0e6' : cfg.walls[rng() * cfg.walls.length | 0];
-      const style = cfg.style && lv < 9 ? cfg.style : lv >= 7 ? (rng() < 0.55 ? 'glass' : 'modern') : lv >= 4 && rng() < 0.4 ? 'modern' : 'plaster';
-      const shops = kind === 0 && lv >= 2 && ar > 90 && rng() < (cfg.style ? 0.6 : 0.45);
+      let color = cfg.walls[rng() * cfg.walls.length | 0], style; const r0 = rng(), two = (a, b) => (rng() < 0.5 ? a : b);
+      if (kind === 1) { style = cfg.style || 'plaster'; color = cfg.style ? cfg.walls[0] : '#f1ece0'; }
+      else if (cfg.style) { style = lv >= 9 ? 'glass' : cfg.style; if (style === 'glass') color = 'x'; }
+      else if (lv >= 7) style = r0 < 0.55 ? 'glass' : 'modern';
+      else if (lv >= 4) style = r0 < 0.5 ? 'modern' : r0 < 0.7 ? 'claustra' : 'plaster';
+      else if (lv >= 2) style = r0 < 0.48 ? 'plaster' : r0 < 0.6 ? 'colonial' : r0 < 0.76 ? 'modern' : r0 < 0.88 ? 'claustra' : 'block';
+      else style = r0 < 0.56 ? 'plaster' : r0 < 0.9 ? 'block' : 'claustra';
+      if (!cfg.style) { if (style === 'glass' || style === 'block') color = 'x'; else if (style === 'modern') color = two('#dcd8cc', '#c9d2d6'); else if (style === 'colonial') color = two('#e8d39a', '#dcc3a4'); else if (style === 'claustra') color = two('#e9e2d0', '#d6c6a2'); }
+      const shops = kind === 0 && lv >= 2 && ar > 90 && rng() < (cfg.style ? 0.6 : 0.45), v0 = shops ? 0.25 : 0, shopCol = cfg.walls[(n + lv) % Math.min(3, cfg.walls.length)];
       const gh = shops ? 3.8 : 0, h = kind === 3 ? 3 : gh + (lv - (shops ? 1 : 0)) * 3.1 + (lv === 1 ? 0.3 : 0);
-      const fb = this.bk(`facade:${style}|${color}`, cx, cz), sb = shops ? this.bk('shop:x|' + color, cx, cz) : null;
+      const fb = this.bk(`facade:${style}|${color}`, cx, cz), sb = shops ? this.bk('shop:x|' + shopCol, cx, cz) : null;
       let u = (rng() * 4 | 0) / 4;
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n, x1 = p[i * 2], z1 = p[i * 2 + 1], x2 = p[j * 2], z2 = p[j * 2 + 1], l = Math.hypot(x2 - x1, z2 - z1);
         if (shops) sb.quad([x2, 0, z2], [x1, 0, z1], [x1, gh, z1], [x2, gh, z2], u * 0.8, 0, u * 0.8 + l / 16, 1);
-        fb.quad([x2, gh, z2], [x1, gh, z1], [x1, h, z1], [x2, h, z2], u, 0, u + l / 12.8, (h - gh) / 12.4);
+        fb.quad([x2, gh, z2], [x1, gh, z1], [x1, h, z1], [x2, h, z2], u, v0, u + l / 12.8, v0 + (h - gh) / 12.4);
         u += l / 12.8;
       }
       // toit
@@ -504,6 +518,7 @@ export class World {
     if (this.shore) { const colsB = [0xc0392b, 0x1f618d, 0xf1c40f, 0x117a65]; for (let k = 0; k < 9; k++) { const x = this.pois.beach.x - 260 + k * 62 + rng() * 20, z = this.shoreZ(x) - 9 - rng() * 6; const g = new THREE.SphereGeometry(1, 12, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2); g.scale(1.0, 0.8, 5.2); const boat = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: colsB[k % 4], roughness: 0.7, side: THREE.DoubleSide })); boat.position.set(x, 0.6, z); boat.rotation.y = 0.3 + rng() * 0.6; boat.castShadow = true; this.group.add(boat); this.collide(x - 1.5, z - 3, x + 1.5, z + 3); } }
   }
   plant(x, z, palmOk = true) {
+    if (this.fuelStations && this.fuelStations.some(f => Math.hypot(f.x - x, f.z - z) < 9)) return;
     if (this.cfg.tree === 'palm' && palmOk && this.rng() < 0.55) this.inst.palm.push([x, 0, z, 0.8 + this.rng() * 0.5, this.rng() * 6.28]);
     else this.inst.tree.push([x, 0, z, 0.8 + this.rng() * 0.6, this.rng() * 6.28]);
   }
@@ -542,12 +557,14 @@ export class World {
       g.computeVertexNormals(); g.rotateX(Math.PI / 2 - 0.12 - (k % 3) * 0.3); g.rotateY(k * (Math.PI * 2 / 11)); g.translate(1.0, 7.6, 0); fronds.push(g); }
     place(trunk, new THREE.MeshStandardMaterial({ color: 0x7a6650, roughness: 1 }), this.inst.palm, sy);
     place(merge(fronds), new THREE.MeshStandardMaterial({ map: lt, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.9 }), this.inst.palm, sy);
-    // arbres feuillus
-    const tt = new THREE.CylinderGeometry(0.22, 0.34, 3.4, 7); tt.translate(0, 1.7, 0);
-    const blobs = []; const r2 = rng32(5);
-    for (let k = 0; k < 5; k++) { const g = new THREE.IcosahedronGeometry(1.5 + r2() * 0.9, 1); const pa = g.attributes.position; for (let i = 0; i < pa.count; i++) { const f = 0.85 + ((Math.sin(pa.getX(i) * 12.9 + pa.getY(i) * 78.2 + pa.getZ(i) * 37.7) * 43758.5) % 1 + 1) % 1 * 0.3; pa.setXYZ(i, pa.getX(i) * f, pa.getY(i) * f * 0.8, pa.getZ(i) * f); } g.translate((r2() - 0.5) * 3.2, 4.2 + r2() * 1.8, (r2() - 0.5) * 3.2); { const na = g.attributes.normal, pp = g.attributes.position; for (let i = 0; i < pp.count; i++) { const v = new THREE.Vector3(pp.getX(i), pp.getY(i) - 4.6, pp.getZ(i)).normalize(); na.setXYZ(i, v.x, v.y * 0.6 + 0.4, v.z); } } blobs.push(g); }
-    place(tt, new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 1 }), this.inst.tree, sy);
-    place(merge(blobs), new THREE.MeshStandardMaterial({ color: this.cfg.tree === 'leaf' ? 0x47702f : 0x2c5f27, roughness: 1 }), this.inst.tree, sy);
+    // arbres feuillus : tronc ramifié + feuillage en cartes transparentes
+    const trunkG = merge([tr(new THREE.CylinderGeometry(0.2, 0.34, 3.2, 7), 0, 1.6, 0), tr(new THREE.CylinderGeometry(0.1, 0.18, 2.4, 5), 0.6, 3.7, 0.1, 0, 0, -0.55), tr(new THREE.CylinderGeometry(0.1, 0.18, 2.4, 5), -0.55, 3.7, -0.2, 0, 0, 0.5), tr(new THREE.CylinderGeometry(0.09, 0.15, 2.2, 5), 0.05, 3.8, 0.6, 0.5, 0, 0)]);
+    const canopy = (R, H, n, flat) => { const r3 = rng32(n * 7 + (flat ? 3 : 1)), parts = []; for (let k = 0; k < n; k++) { const a = r3() * 6.283, el = (r3() - 0.25) * 1.5, rr = R * (0.45 + r3() * 0.55), s = 1.7 + r3() * 1.3, g = new THREE.PlaneGeometry(s, s); g.rotateY(r3() * 6.283); g.rotateX((r3() - 0.5) * 1.6);
+        const px = Math.cos(a) * Math.cos(el) * rr, py = Math.sin(el) * rr * (flat ? 0.35 : 0.7), pz = Math.sin(a) * Math.cos(el) * rr; g.translate(px, H + py, pz); const na = g.attributes.normal, l = Math.hypot(px, py + 0.6, pz) || 1; for (let i = 0; i < na.count; i++) na.setXYZ(i, px / l * 0.7, (py + 0.6) / l * 0.7 + 0.5, pz / l * 0.7); parts.push(g); } return merge(parts); };
+    const kinds = [['mango', canopy(2.9, 5.1, 44, false), 0.62], ['neem', canopy(2.5, 5.6, 36, false), 0.88], ['flame', canopy(3.6, 5.0, 40, true), 1]];
+    const all = this.inst.tree.map((t, i) => [t, Math.abs(Math.sin(i * 91.7) * 1000) % 1]);
+    place(trunkG, new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 1 }), this.inst.tree, sy);
+    let lo = 0; for (const [kind, geo, hi] of kinds) { const list = all.filter(a => a[1] >= lo && a[1] < hi).map(a => a[0]); lo = hi; place(geo, new THREE.MeshStandardMaterial({ map: leafTex(kind), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.95 }), list, sy); }
     // lampadaires
     const pole = merge([tr(new THREE.CylinderGeometry(0.07, 0.1, 7, 6), 0, 3.5, 0), tr(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 5), -1.0, 6.95, 0, 0, 0, Math.PI / 2)]);
     const ry = (d, it) => { d.rotation.y = it[3] || 0; };
@@ -630,7 +647,7 @@ export class World {
     return this.freeNear(x, z, 0.8);
   }
   poi(name) { return this.pois[name] || this.pois.landmark; }
-  setNight(n) { for (const m of this.nightMats) m.emissiveIntensity = n * 0.9; if (this.lampMat) this.lampMat.emissiveIntensity = n * 3; }
+  setNight(n) { for (const m of this.nightMats) m.emissiveIntensity = n * 0.9; if (this.lampMat) this.lampMat.emissiveIntensity = n * 3; if (this.poolMat) this.poolMat.opacity = n * 0.5; }
   update(dt, t) {
     if (this.water) { this.water.normalMap.offset.x = t * 0.004; this.water.normalMap.offset.y = t * 0.006; }
     if (this.water2) this.water2.normalMap.offset.x = t * 0.01;
