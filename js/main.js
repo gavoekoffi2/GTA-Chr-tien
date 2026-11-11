@@ -1,4 +1,4 @@
-// Lumière dans la Ville — boucle principale.
+// Zion City — boucle principale.
 import * as THREE from 'three';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { S, L, load, save, reset } from './state.js';

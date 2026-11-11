@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const STR = {
   continue: ['Continuer', 'Continue'], play: ['Jouer', 'Play'], newgame: ['Nouvelle partie', 'New game'],
   lang: ['Language: English', 'Langue : Français'], loading: ['Chargement…', 'Loading…'],
-  sub: ['dans la Ville', 'in the City'],
+  sub: ['Lumière dans la ville', 'Light in the city'],
   foot: ['Un jeu qui édifie. Marche avec Dieu, sers ton prochain, deviens une lumière dans la ville.', 'A game that builds you up. Walk with God, serve your neighbour, become a light in the city.'],
   choose: ['Ton personnage', 'Your character'], yourname: ['Ton prénom', 'Your first name'], top: ['Haut', 'Top'], bottom: ['Bas', 'Bottom'],
   start: ['Commencer', 'Start'], ok: ['Valider', 'Done'], amen: ['Amen', 'Amen'], next: ['Continuer', 'Continue'], close: ['Fermer', 'Close'],
@@ -36,7 +36,7 @@ export const ui = {
     $('btn-new').classList.toggle('hidden', !S.started);
     $('menu-verse').textContent = L(['« Vous êtes la lumière du monde. Une ville située sur une montagne ne peut être cachée. » — Matthieu 5:14', '"Ye are the light of the world. A city that is set on an hill cannot be hid." — Matthew 5:14']);
     $('cs-title').textContent = T('choose'); $('cs-lname').textContent = T('yourname'); $('cs-ltop').textContent = T('top'); $('cs-lbottom').textContent = T('bottom'); $('cs-ok').textContent = T('start');
-    document.title = L(['Lumière dans la Ville', 'Light in the City']);
+    document.title = 'Zion City';
   },
   show(id, on = true) { $(id).classList.toggle('hidden', !on); },
   advance() { if (this._advance) { const f = this._advance; this._advance = null; f(); return true; } return false; },
