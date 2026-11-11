@@ -112,3 +112,5 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 .opts button.sel{border-color:var(--gold);background:rgba(245,197,66,.2)}
 .sw .pr{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;opacity:.85}
 .swatches{row-gap:20px}
+
+.hudbtn.third{top:calc(118px + env(safe-area-inset-top));font-size:20px}

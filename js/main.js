@@ -28,9 +28,10 @@ const X = {
   callMoto: ['Faire venir ma moto', 'Bring my motorbike'], callCar: ['Faire venir ma voiture', 'Bring my car'], callZem: ['Appeler un zémidjan', 'Call a moto-taxi'], zemJob: ['Travailler comme zémidjan / taxi', 'Work as a moto-taxi / taxi'], stopJob: ['Arrêter le travail', 'Stop working'],
   outfit: ['Personnage et vêtements (tailleur)', 'Character and clothes (tailor)'], quality: ['Qualité graphique', 'Graphics quality'], sound: ['Sons', 'Sound'],
   menu: ['Menu principal', 'Main menu'], resume: ['Reprendre', 'Resume'], on: ['activés', 'on'], off: ['coupés', 'off'], done: ['accompli', 'done'], abandon: ['Abandonner la mission en cours', 'Abandon current mission'],
-  help: ['Déplacement : ZQSD / WASD / flèches · Courir : Maj · Action : E · Véhicule : F · Radio : R · Klaxon : H · Travail : J · Menu : Tab · Caméra : glisser la souris', 'Move: WASD / arrows · Run: Shift · Action: E · Vehicle: F · Radio: R · Horn: H · Work: J · Menu: Tab · Camera: drag the mouse'],
-  helpT: ['Manette à gauche pour marcher, glisse à droite pour regarder. E : action · » : courir · 🚗 : véhicule · 📻 : radio', 'Left stick to walk, drag on the right to look. E: action · »: run · 🚗: vehicle · 📻: radio'],
+  help: ['Déplacement : ZQSD / WASD / flèches · Courir : Maj ou double appui sur une direction · Pause : P / Échap · Action : E · Véhicule : F · Radio : R · Klaxon : H · Travail : J · Menu : Tab · Caméra : glisser la souris', 'Move: WASD / arrows · Run: Shift or double-tap a direction · Pause: P / Esc · Action: E · Vehicle: F · Radio: R · Horn: H · Work: J · Menu: Tab · Camera: drag the mouse'],
+  helpT: ['Manette à gauche pour marcher, glisse à droite pour regarder. E : action · » : courir (ou double-tape la manette, ou pousse-la jusqu’au bord) · ⏸ : pause · 🚗 : véhicule · 📻 : radio', 'Left stick to walk, drag on the right to look. E: action · »: run (or double-tap the stick, or push it to the edge) · ⏸: pause · 🚗: vehicle · 📻: radio'],
   scrolls: ['Parchemins trouvés dans cette ville', 'Scrolls found in this city'], welcome: ['Bienvenue à', 'Welcome to'], confirmNew: ['Recommencer effacera ta progression. Continuer ?', 'Starting over will erase your progress. Continue?'], yes: ['Oui', 'Yes'], no: ['Non', 'No'],
+  paused: ['Pause', 'Paused'], pauseHint: ['Le jeu est arrêté. Appuie sur P ou Échap pour reprendre.', 'The game is stopped. Press P or Esc to resume.'],
   osm: ['Plan des villes : © les contributeurs d’OpenStreetMap', 'City maps: © OpenStreetMap contributors'],
   free: ['offert par ton église pour ta mission', 'paid by your church for your mission'], ticket: ['Billet', 'Ticket'], short: ['Il te manque', 'You are short by'],
   stations: ['Stations de radio', 'Radio stations'], radioOff: ['Radio éteinte', 'Radio off'], musicMode: ['Écouter la musique', 'Listen to music'], mAlways: ['partout (écouteurs)', 'everywhere (earphones)'], mVeh: ['seulement en véhicule', 'in vehicles only'], mOff: ['jamais', 'never'],
@@ -150,6 +151,14 @@ function openCharsel(first) {
   $('cs-ok').onclick = async () => { if (busy) return; S.name = $('cs-input').value.trim().slice(0, 16) || NAMES[S.char]; ui.show('charsel', false); G.player.yaw = G.player.heading + Math.PI; G.player.pitch = 0.22; G.player.dist = 4.6;
     if (first) { S.started = true; save(); await chooseMode(); } save(); startPlay(); if (first) ui.toast(x('start'), true, 9000); };
 }
+function pauseGame() {
+  if (G.paused || G.state !== 'play' || ui.busy) return; G.paused = true; audio.pause(); ui.setPrompt(null);
+  const b = (id, t, gold) => `<button class="big${gold ? ' gold' : ''}" data-p="${id}" style="min-width:240px;text-align:center">${t}</button>`;
+  const box = ui.openModal(`<h2>⏸ ${x('paused')}</h2><p style="opacity:.75">${x('pauseHint')}</p><div class="opts" style="align-items:center">${b('go', '▶ ' + x('resume'), true)}${b('phone', '☰ ' + L(X.tabs[0]) + ' · ' + L(X.tabs[3]) + ' · ' + L(X.tabs[4]))}${b('menu', '⌂ ' + x('menu'))}</div><p style="opacity:.6;font-size:12px">${ui.touch ? x('helpT') : x('help')}</p>`);
+  box.querySelectorAll('[data-p]').forEach(btn => btn.onclick = () => { const a = btn.dataset.p; resumeGame(); if (a === 'phone') phone(0); else if (a === 'menu') { save(); showMenu(); } });
+}
+function resumeGame() { if (!G.paused) return; G.paused = false; ui.closeModal(); audio.resume(); G.input.clear(); clock.getDelta(); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 function startPlay() { G.state = 'play'; ui.show('menu', false); ui.show('hud'); ui.show('touch', ui.touch); G.refreshHud(); G.input.clear(); audio.ctxState.menu = false; audio.stopOnce(); }
 function showMenu() { G.state = 'menu'; ui.refreshTexts(); ui.show('hud', false); ui.show('menu'); $('menu-foot').textContent = T('foot') + ' — ' + x('osm'); audio.ctxState.menu = true; }
 
@@ -253,12 +262,15 @@ function interact() {
 
 function frame() {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, clock.getDelta()); G.time += dt;
+  const dt = Math.min(0.05, clock.getDelta());
+  if (G.paused) { if (G.input.take('KeyP') || G.input.take('Escape')) resumeGame(); renderer.render(G.scene, camera); return; }
+  G.time += dt;
   if (!G.world || !G.player || G.switching) { renderer.render(G.scene, camera); return; }
   const pl = G.player, inp = G.input, eco = G.eco, playing = G.state === 'play'; inp.update();
   if (ui.busy && (inp.take('KeyE') || inp.take('Space') || inp.take('Enter'))) ui.advance();
   const frozen = !playing || ui.busy > 0;
   if (playing && !ui.busy && inp.take('Tab')) phone(0);
+  if (playing && !ui.busy && (inp.take('KeyP') || inp.take('Escape'))) { pauseGame(); renderer.render(G.scene, camera); return; }
   if (G.state === 'menu') pl.yaw += dt * 0.06;
   const peds = G.crowd.obstacles(), units = eco.vehicles(), all = G.traffic.cars.concat(G.vehicles, units);
   pl.pedBrake = false; pl.update(dt, inp, frozen, all, pl.vehicle ? peds : []);

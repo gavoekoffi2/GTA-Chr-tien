@@ -2,12 +2,16 @@
 import * as THREE from 'three';
 import { ui } from './ui.js';
 
+const DIRS = ['KeyW', 'KeyZ', 'ArrowUp', 'KeyS', 'ArrowDown', 'KeyA', 'KeyQ', 'ArrowLeft', 'KeyD', 'ArrowRight'];
+
 export class Input {
   constructor(canvas) {
     this.keys = {}; this.move = { x: 0, y: 0 }; this.run = false; this.look = { dx: 0, dy: 0 }; this.pressed = {}; this.zoom = 0;
     const touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window; this.touch = touch; ui.touch = touch;
     addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; const k = e.code; if (!this.keys[k]) this.pressed[k] = true; this.keys[k] = true; if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(k)) e.preventDefault(); });
-    addEventListener('keyup', e => { this.keys[e.code] = false; });
+    addEventListener('keyup', e => { this.keys[e.code] = false; if (DIRS.includes(e.code) && !DIRS.some(d => this.keys[d])) this.sprint = false; });
+    this.lastTap = {}; this.sprint = false;
+    addEventListener('keydown', e => { const k = e.code; if (!DIRS.includes(k) || e.repeat) return; const now = performance.now(); if (now - (this.lastTap[k] || 0) < 320) this.sprint = true; this.lastTap[k] = now; });
     addEventListener('blur', () => { this.keys = {}; });
     // caméra : glisser avec la souris ou le doigt (moitié droite)
     let drag = null;
@@ -19,11 +23,13 @@ export class Input {
     // manette tactile
     const joy = document.getElementById('joy'), knob = document.getElementById('joyknob'); let jid = null; this.joy = { x: 0, y: 0 };
     const jmove = e => { const r = joy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2; let dx = (e.clientX - cx) / (r.width / 2), dy = (e.clientY - cy) / (r.height / 2); const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } this.joy.x = dx; this.joy.y = -dy; knob.style.transform = `translate(${dx * 36}px,${dy * 36}px)`; };
-    joy.addEventListener('pointerdown', e => { jid = e.pointerId; joy.setPointerCapture(jid); jmove(e); e.preventDefault(); });
+    let lastJoy = 0; this.joySprint = false;
+    joy.addEventListener('pointerdown', e => { const now = performance.now(); this.joySprint = now - lastJoy < 350; lastJoy = now; jid = e.pointerId; joy.setPointerCapture(jid); jmove(e); e.preventDefault(); });
     joy.addEventListener('pointermove', e => { if (e.pointerId === jid) jmove(e); });
-    const jend = e => { if (e.pointerId === jid) { jid = null; this.joy.x = this.joy.y = 0; knob.style.transform = ''; } }; joy.addEventListener('pointerup', jend); joy.addEventListener('pointercancel', jend);
+    const jend = e => { if (e.pointerId === jid) { jid = null; this.joySprint = false; this.joy.x = this.joy.y = 0; knob.style.transform = ''; } }; joy.addEventListener('pointerup', jend); joy.addEventListener('pointercancel', jend);
     const btn = (id, code, toggle) => { const b = document.getElementById(id); b.addEventListener('pointerdown', e => { e.preventDefault(); if (toggle) { this.runLock = !this.runLock; b.classList.toggle('on', this.runLock); } else this.pressed[code] = true; }); };
     btn('tb-act', 'KeyE'); btn('tb-veh', 'KeyF'); btn('tb-run', 'Run', true); btn('tb-job', 'KeyJ'); btn('tb-horn', 'KeyH');
+    document.getElementById('btn-pause').addEventListener('click', () => { this.pressed.KeyP = true; });
     document.getElementById('btn-radio').addEventListener('click', () => { this.pressed.KeyR = true; });
     document.getElementById('btn-phone').addEventListener('click', () => { this.pressed.Tab = true; });
   }
@@ -31,7 +37,7 @@ export class Input {
   update() {
     const k = this.keys; let x = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.KeyQ || k.ArrowLeft ? 1 : 0), y = (k.KeyW || k.KeyZ || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
     if (Math.abs(this.joy.x) + Math.abs(this.joy.y) > 0.08) { x = this.joy.x; y = this.joy.y; }
-    this.move.x = x; this.move.y = y; this.run = !!(k.ShiftLeft || k.ShiftRight || this.runLock || Math.hypot(this.joy.x, this.joy.y) > 0.93);
+    this.move.x = x; this.move.y = y; this.run = !!(k.ShiftLeft || k.ShiftRight || this.runLock || this.sprint || this.joySprint || Math.hypot(this.joy.x, this.joy.y) > 0.85);
   }
   clear() { this.pressed = {}; this.look.dx = this.look.dy = 0; }
 }
@@ -69,7 +75,7 @@ export class Player {
     } else {
       const l = Math.hypot(mv.x, mv.y);
       if (l > 0.08 && !this.override) {
-        const run = input.run && this.energy > 3, sp = (run ? 5.4 : 1.9) * Math.min(1, l), fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw), rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
+        const run = input.run, sp = (run ? (this.energy > 5 ? 5.4 : 4.2) : 1.9) * Math.min(1, l), fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw), rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
         const dx = (fx * mv.y + rx * mv.x) / l, dz = (fz * mv.y + rz * mv.x) / l;
         this.pos.x += dx * sp * dt; this.pos.z += dz * sp * dt; w.resolve(this.pos, 0.36);
         for (const v of vehicles) { const ex = this.pos.x - v.pos.x, ez = this.pos.z - v.pos.z, rr = v.radius * 0.8 + 0.3, d2 = ex * ex + ez * ez; if (d2 < rr * rr && d2 > 1e-4) { const d = Math.sqrt(d2); this.pos.x = v.pos.x + ex / d * rr; this.pos.z = v.pos.z + ez / d * rr; } }

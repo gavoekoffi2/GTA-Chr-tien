@@ -41,6 +41,8 @@ export const audio = {
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination); this.buildAmbience(); } catch (e) { ctx = null; }
     this.play();
   },
+  pause() { this.paused = true; if (this.el && !this.el.paused) this.el.pause(); if (ctx && ctx.state === 'running') ctx.suspend(); },
+  resume() { if (!this.paused) return; this.paused = false; if (ctx) ctx.resume(); if (this.el && this.el.src && (this.now || this.special) && this.vol > 0.01) this.el.play().catch(() => {}); },
   enabled() { return S.settings.sound !== false; },
   musicMode() { return S.settings.music || 'always'; },
 
