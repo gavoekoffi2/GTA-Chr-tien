@@ -1,0 +1,16 @@
+<!doctype html><html><body style="margin:0;background:#789">
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {createCharacter,CHARACTERS} from './js/characters.js';
+const r=new THREE.WebGLRenderer({antialias:true});r.setSize(1600,700);document.body.appendChild(r.domElement);
+r.toneMapping=THREE.ACESFilmicToneMapping;
+const s=new THREE.Scene();s.background=new THREE.Color(0x8899aa);
+s.add(new THREE.HemisphereLight(0xffffff,0x554433,1.5));const d=new THREE.DirectionalLight(0xffffff,2.5);d.position.set(3,5,4);s.add(d);
+const cam=new THREE.PerspectiveCamera(28,1600/700,.1,100);cam.position.set(0,1.1,9.5);cam.lookAt(0,0.9,0);
+const ids=Object.keys(CHARACTERS);const cs=[];const anims=['idle_neutral_01','walk_neutral','run_neutral','wave_01','gestic_talk_neutral_01','crouch_idle','sit_chair_idle_neutral_01','claphands_01','cheer_01','dancing_neutral','idle_neutral_01','walk_neutral','idle_neutral_01','walk_neutral'];
+for(let i=0;i<ids.length;i++){const c=await createCharacter(ids[i]);c.root.position.x=(i-ids.length/2+.5)*0.62;c.root.rotation.y=0.3;s.add(c.root);c.play(anims[i]);cs.push(c);}
+await new Promise(r=>setTimeout(r,1500));
+for(let k=0;k<20;k++)cs.forEach(c=>c.update(0.03));
+r.render(s,cam);window.DONE=true;
+</script></body></html>
