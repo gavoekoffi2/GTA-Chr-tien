@@ -14,9 +14,9 @@ export const CITIES = {
     walls: ['#f4efe4', '#dfe5ea', '#e9d6b8', '#d9c7b0', '#e6e0d2'], taxi: 0xe8641b, motos: 2, grade: 4, landmark: ['Cathédrale Saint-Paul', "St Paul's Cathedral"] },
   lagos: { name: 'Lagos', country: ['Nigeria', 'Nigeria'], water: 'lagoon', ground: 'concrete', tree: 'palm', en: true,
     walls: ['#efe6d2', '#d8d2c4', '#e4cfae', '#cdd9e2', '#e9ddc9'], taxi: 0xf2c200, motos: 5, grade: 5, landmark: ['Place Tinubu', 'Tinubu Square'] },
-  paris: { name: 'Paris', country: ['France', 'France'], water: 'river', ground: 'concrete', tree: 'leaf', en: false, style: 'haussmann',
+  paris: { name: 'Paris', country: ['France', 'France'], water: 'river', riverW: 130, ground: 'pave', tree: 'leaf', en: false, style: 'haussmann',
     walls: ['#e9e0cc', '#e2d8c2', '#ece5d5', '#ddd2bb'], taxi: 0x202020, motos: 1, grade: 6, landmark: ['Tour Eiffel', 'Eiffel Tower'] },
-  london: { name: ['Londres', 'London'], country: ['Royaume-Uni', 'United Kingdom'], water: 'river', ground: 'concrete', tree: 'leaf', en: true, style: 'brick', left: true,
+  london: { name: ['Londres', 'London'], country: ['Royaume-Uni', 'United Kingdom'], water: 'river', riverW: 230, ground: 'pave', tree: 'leaf', en: true, style: 'brick', left: true,
     walls: ['#b9a48c', '#a8927a', '#c9b79e', '#9c8a78'], taxi: 0x111111, motos: 1, grade: 6, landmark: ['Big Ben', 'Big Ben'] },
 };
 
@@ -267,15 +267,17 @@ export class World {
     // terre et mer
     const gname = 'tex:' + cfg.ground;
     if (this.shore) {
-      const land = this.bk(gname), sand = this.bk('tex:sand'), sp = this.shore;
-      for (let i = 0; i < sp.length - 1; i++) { const a = sp[i], b = sp[i + 1];
-        land.up([a[0], 0, -4000], [b[0], 0, -4000], [b[0], 0, b[1] - 70], [a[0], 0, a[1] - 70], 7);
-        sand.up([a[0], 0, a[1] - 70], [b[0], 0, b[1] - 70], [b[0], -0.35, b[1] + 6], [a[0], -0.35, a[1] + 6], 5); }
+      const land = this.bk(gname), sand = this.bk('tex:sand');
+      const G0 = 140, xa = ex.x0 - 700, xb = ex.x1 + 700, za = ex.z0 - 700;
+      for (let x = xa; x < xb; x += G0) { const z0 = this.shoreZ(x) - 70, z1 = this.shoreZ(x + G0) - 70, zm = Math.min(z0, z1);
+        for (let z = za; z < zm; z += G0) { const e0 = Math.min(z + G0, zm); land.up([x, 0, z], [x + G0, 0, z], [x + G0, 0, e0], [x, 0, e0], 7); }
+        land.up([x, 0, zm], [x + G0, 0, zm], [x + G0, 0, z1], [x, 0, z0], 7);
+        sand.up([x, 0, z0], [x + G0, 0, z1], [x + G0, -0.35, z1 + 76], [x, -0.35, z0 + 76], 5); }
       const wm = new THREE.MeshStandardMaterial({ color: 0x1f7f9c, roughness: 0.12, metalness: 0.55, normalMap: ptex('water_n').clone(), transparent: true, opacity: 0.93 });
       wm.normalMap.repeat.set(160, 160); wm.normalMap.needsUpdate = true; wm.normalScale.set(0.6, 0.6);
-      const sea = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000), wm); sea.rotation.x = -Math.PI / 2; sea.position.y = -0.18; this.group.add(sea); this.water = wm;
+      const sea = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000, 48, 48), wm); sea.rotation.x = -Math.PI / 2; sea.position.y = -0.33; this.group.add(sea); this.water = wm;
     } else {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000), new THREE.MeshStandardMaterial({ map: ptex(cfg.ground + '_d', true).clone(), roughness: 1 }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000, 56, 56), new THREE.MeshStandardMaterial({ map: ptex(cfg.ground + '_d', true).clone(), roughness: 1 }));
       m.material.map.repeat.set(1300, 1300); m.material.map.needsUpdate = true; m.rotation.x = -Math.PI / 2; m.receiveShadow = true; this.group.add(m);
     }
     // eau intérieure, verdure, terrains
@@ -284,6 +286,12 @@ export class World {
       const wm2 = new THREE.MeshStandardMaterial({ color: cfg.water === 'river' ? 0x4f7672 : 0x3b7f8f, roughness: 0.15, metalness: 0.5, normalMap: ptex('water_n').clone() }); wm2.normalMap.repeat.set(1, 1); wm2.normalMap.needsUpdate = true;
       this.mats['water'] = wm2; const wb = this.buckets['water'] = new Bucket(); this.water2 = wm2;
       for (const w of d.water) { const p = flt(w); try { wb.poly(p, 0.035, 14); } catch (e) { continue; } this.addPoly(p); }
+    }
+    this.rivers = [];
+    if (d.rivers && d.rivers.length && cfg.riverW) {
+      if (!this.mats['water']) { const wm3 = new THREE.MeshStandardMaterial({ color: 0x4f7672, roughness: 0.15, metalness: 0.5, normalMap: ptex('water_n').clone() }); wm3.normalMap.needsUpdate = true; this.mats['water'] = wm3; this.buckets['water'] = new Bucket(); this.water2 = wm3; }
+      const wb = this.buckets['water'];
+      for (const r of d.rivers) { const p = flt(r); this.rivers.push(p); for (let i = 0; i < p.length - 2; i += 2) { wb.ribbon(p[i], p[i + 1], p[i + 2], p[i + 3], cfg.riverW, 0.036, 14); for (let k = 0; k < 10; k++) { const a0 = k * Math.PI / 5, a1 = a0 + Math.PI / 5, rr = cfg.riverW / 2; wb.tri([p[i], 0.036, p[i + 1]], [p[i] + Math.cos(a0) * rr, 0.036, p[i + 1] + Math.sin(a0) * rr], [p[i] + Math.cos(a1) * rr, 0.036, p[i + 1] + Math.sin(a1) * rr], 14); } } }
     }
     this.greens = [];
     for (const g of d.green) { const p = flt(g); try { this.bk('tex:grass').poly(p, 0.012, 5); this.greens.push(p); } catch (e) { /* polygone invalide */ } }
@@ -379,6 +387,7 @@ export class World {
     else if (d.water.length) { let best = null, bd = 1e9; for (const w of d.water) for (let i = 0; i < w.length; i += 2) { const x = w[i] / 10, z = w[i + 1] / 10, dd = (x - ch.x) ** 2 + (z - ch.z) ** 2; if (dd < bd && x > this.bounds.x0 && x < this.bounds.x1 && z > this.bounds.z0 && z < this.bounds.z1) { bd = dd; best = [x, z]; } }
       const n = this.nodes[this.nearestNode(best[0], best[1], 3)], f = this.freeNear(n.x, n.z, 1); this.pois.beach = { x: f.x, z: f.z, cx: best[0], cz: best[1], face: 0, name: '' }; }
     else this.pois.beach = this.pois.park;
+    if (this.rivers.length) { let best = null, bd = 1e9; for (const p of this.rivers) for (let i = 0; i < p.length; i += 2) { const dd = (p[i] - ch.x) ** 2 + (p[i + 1] - ch.z) ** 2; if (dd < bd && p[i] > this.bounds.x0 && p[i] < this.bounds.x1 && p[i + 1] > this.bounds.z0 && p[i + 1] < this.bounds.z1) { bd = dd; best = [p[i], p[i + 1]]; } } if (best) { const f = this.freeNear(best[0], best[1] + this.cfg.riverW / 2 + 6, 1); this.pois.beach = { x: f.x, z: f.z, cx: best[0], cz: best[1], face: 0, name: '' }; } }
     this.pois.altar = this.pois.church;
     this.homeSpot = this.pois.home;
     // clocher et croix sur l'église
@@ -532,7 +541,12 @@ export class World {
       for (const s of l) { const dx = s[2] - s[0], dz = s[3] - s[1], L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - s[0]) * dx + (z - s[1]) * dz) / L2)), ex = x - s[0] - dx * t, ez = z - s[1] - dz * t, d2 = ex * ex + ez * ez; if (d2 < best) best = d2; } }
     return Math.sqrt(best);
   }
-  free(x, z, r = 0.6) { return this.segDist(x, z, r) >= r && !this.inside(x, z) && (!this.shore || z < this.shoreZ(x) - 1); }
+  riverHit(x, z) { // renvoie le point de berge le plus proche si (x,z) est dans la rivière (hors pont)
+    if (!this.rivers.length) return null; const R = this.cfg.riverW / 2 - 3; let best = null, bd = R;
+    for (const p of this.rivers) for (let i = 0; i < p.length - 2; i += 2) { const dx = p[i + 2] - p[i], dz = p[i + 3] - p[i + 1], L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - p[i]) * dx + (z - p[i + 1]) * dz) / L2)), cx = p[i] + dx * t, cz = p[i + 1] + dz * t, d = Math.hypot(x - cx, z - cz); if (d < bd) { bd = d; best = [cx, cz, d]; } }
+    if (!best || this.onRoad(x, z)) return null; const d = best[2] || 1; return { x: best[0] + (x - best[0]) / d * (R + 0.2), z: best[1] + (z - best[1]) / d * (R + 0.2) };
+  }
+  free(x, z, r = 0.6) { return this.segDist(x, z, r) >= r && !this.inside(x, z) && (!this.shore || z < this.shoreZ(x) - 1) && !this.riverHit(x, z); }
   freeNear(x, z, r = 0.8) { if (this.free(x, z, r)) return { x, z }; for (let d = 1.5; d < 60; d += 1.5) for (let k = 0; k < 10; k++) { const a = k * 0.628 + d, px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d; if (this.free(px, pz, r)) return { x: px, z: pz }; } return { x, z }; }
   // repousse un cercle hors des murs ; renvoie true s'il y a eu contact
   resolve(pos, r) {
@@ -547,6 +561,7 @@ export class World {
     if (pos.x < bd.x0) { pos.x = bd.x0; hit = true; } if (pos.x > bd.x1) { pos.x = bd.x1; hit = true; }
     if (pos.z < bd.z0) { pos.z = bd.z0; hit = true; } if (pos.z > bd.z1) { pos.z = bd.z1; hit = true; }
     if (this.shore) { const sz = this.shoreZ(pos.x) - 1.5; if (pos.z > sz) { pos.z = sz; hit = true; } }
+    const rh = this.riverHit(pos.x, pos.z); if (rh) { pos.x = rh.x; pos.z = rh.z; hit = true; }
     return hit;
   }
   nodesNear(x, z, r) { const out = [], g = Math.ceil(r / 60), cx = Math.floor(x / 60), cz = Math.floor(z / 60); for (let a = cx - g; a <= cx + g; a++) for (let b = cz - g; b <= cz + g; b++) { const l = this.nodeGrid.get(a + ',' + b); if (l) for (const i of l) { const n = this.nodes[i]; if ((n.x - x) ** 2 + (n.z - z) ** 2 <= r * r) out.push(i); } } return out; }
@@ -573,6 +588,7 @@ export class World {
     if (this.shore) { g.fillStyle = '#3f8fb5'; g.beginPath(); g.moveTo(0, cv.height); for (const p of this.shore) g.lineTo(X(p[0]), Z(p[1])); g.lineTo(cv.width, cv.height); g.fill(); }
     const poly = (p, k = 1) => { g.beginPath(); for (let i = 0; i < p.length; i += 2) g[i ? 'lineTo' : 'moveTo'](X(p[i] * k), Z(p[i + 1] * k)); g.closePath(); g.fill(); };
     g.fillStyle = '#3f8fb5'; for (const w of this.data.water) poly(w, 0.1);
+    if (this.rivers.length) { g.strokeStyle = '#3f8fb5'; g.lineWidth = this.cfg.riverW / sc; g.lineJoin = 'round'; for (const p of this.rivers) { g.beginPath(); for (let i = 0; i < p.length; i += 2) g[i ? 'lineTo' : 'moveTo'](X(p[i]), Z(p[i + 1])); g.stroke(); } }
     g.fillStyle = '#9fc48a'; for (const w of this.data.green) poly(w, 0.1); for (const w of this.data.pitch) poly(w, 0.1);
     g.lineCap = 'round';
     for (const pass of [0, 1]) this.nodes.forEach((n, i) => { for (const ed of n.adj) { if (ed.to > i) continue; const m = this.nodes[ed.to]; g.strokeStyle = pass ? (ed.cls <= 2 ? '#fff' : '#f4f1ea') : '#8d8676'; g.lineWidth = Math.max(1.2, ed.w / sc) + (pass ? 0 : 1.4); g.beginPath(); g.moveTo(X(n.x), Z(n.z)); g.lineTo(X(m.x), Z(m.z)); g.stroke(); } });

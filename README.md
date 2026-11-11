@@ -1,0 +1,44 @@
+# Lumière dans la Ville
+
+Un jeu en monde ouvert qui édifie : on incarne un personnage africain qui marche avec Dieu dans de vraies villes, en commençant par **Lomé**.
+
+- **La Marche chrétienne** : 21 étapes et 7 grades, de la nouvelle naissance à la maturité (Nouveau-né en Christ, Disciple, Serviteur, Témoin, Soldat de Christ, Faiseur de disciples, Ambassadeur de Christ).
+- **Lumière dans la ville** : 21 missions libres (le bon Samaritain, le fils prodigue, artisan de paix…).
+- **7 villes réelles** : Lomé, Cotonou, Accra, Abidjan, Lagos, Paris, Londres. Les rues, les bâtiments et les côtes viennent d'OpenStreetMap.
+- Français par défaut, anglais au choix. Jouable sur ordinateur, tablette et téléphone.
+
+## Lancer le jeu
+
+Le jeu est un site statique, sans étape de compilation. Il faut le servir par HTTP :
+
+```bash
+python3 -m http.server 8000
+```
+
+Puis ouvrir `http://localhost:8000`. Il peut aussi être publié tel quel sur GitHub Pages.
+
+## Commandes
+
+| Action | Ordinateur | Téléphone |
+| --- | --- | --- |
+| Se déplacer | ZQSD / WASD / flèches | manette à gauche |
+| Courir | Maj | bouton » |
+| Regarder | glisser la souris | glisser à droite |
+| Action (parler, saluer, voyager) | E | bouton E |
+| Monter / descendre du véhicule | F | bouton 🚗 |
+| Menu (missions, Bible, grades, options) | Tab | bouton ☰ |
+
+## Organisation
+
+- `js/world.js` : construction des villes à partir de `assets/cities/*.json`
+- `js/content.js` : versets, grades et missions (texte bilingue)
+- `js/missions.js` : moteur de missions
+- `js/main.js` : boucle de jeu, menus, mini-carte
+- `tools/` : scripts qui ont servi à préparer les données (cartes, personnages, animations)
+
+## Crédits et licences
+
+- Plans des villes : © les contributeurs d'OpenStreetMap, licence ODbL.
+- Personnages et animations : Microsoft Rocketbox Avatar Library, licence MIT.
+- Textures : Poly Haven, CC0. Texture d'eau et moteur 3D : three.js, licence MIT.
+- Versets : Louis Segond 1910 et King James Version (domaine public).

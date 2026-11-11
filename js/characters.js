@@ -176,7 +176,7 @@ export async function applyOutfit(ch, top, bottom) {
         const id = g.getImageData(0, 0, N, N), d = id.data, reg = new Uint8Array(N * N); const sum = [0, 0, 0], cnt = [0, 0, 0];
         for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
           const u = x / N, v = y / N, side = u < 0.33 || u > 0.67; let r = 0;
-          if (!side) r = v < 0.62 ? 1 : 2; else if (v > 0.26 && v < 0.53) r = 1; else if (v >= 0.56) r = 2;
+          if (!side) r = v > 0.04 && v < 0.84 ? 1 : 0; else if (v < 0.42) r = 2; else if (v < 0.8) r = 1;
           if (!r) continue; const i = (y * N + x) * 4, R = d[i], G = d[i + 1], Bl = d[i + 2], mx = Math.max(R, G, Bl), mn = Math.min(R, G, Bl);
           if (mx < 10) continue; const sat = mx ? (mx - mn) / mx : 0;
           if (R > G && G >= Bl && sat > 0.22 && sat < 0.78 && mx > 60 && (R - Bl) > 28 && (R - G) < (R - Bl) * 0.75 && (R - G) > 6) continue; // peau

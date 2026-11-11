@@ -1,0 +1,360 @@
+{
+ "lome": {
+  "bbox": [
+   6.118,
+   6.142,
+   1.21,
+   1.236
+  ],
+  "center": [
+   6.1262,
+   1.2262
+  ],
+  "seed": 11,
+  "floors": [
+   1,
+   3
+  ],
+  "core": 700,
+  "tall": 0.03,
+  "levels": {
+   "Hôtel 2 Février": 34,
+   "Banque Ouest Africaine": 12,
+   "BCEAO": 14,
+   "Siège de Orabank": 10,
+   "EBID": 12,
+   "Immeuble Fiata": 7,
+   "Palais des congrès": 4,
+   "Parlement": 3,
+   "Grand Marché": 3,
+   "Cathédrale": 5,
+   "Gare de Lomé": 2
+  },
+  "pois": {
+   "church": [
+    6.12476,
+    1.22646,
+    "Cathédrale du Sacré-Cœur"
+   ],
+   "market": [
+    6.12657,
+    1.22782,
+    "Grand Marché de Lomé"
+   ],
+   "landmark": [
+    6.12996,
+    1.21601,
+    "Monument de l'Indépendance"
+   ],
+   "station": [
+    6.13048,
+    1.21974,
+    "Gare de Lomé"
+   ],
+   "prison": [
+    6.12383,
+    1.21829,
+    "Prison civile de Lomé"
+   ],
+   "school": [
+    6.1315,
+    1.222,
+    "Lycée Lomé Cité"
+   ],
+   "stadium": [
+    6.1277,
+    1.215,
+    "Stade Omnisports"
+   ],
+   "home": [
+    6.129,
+    1.2262,
+    ""
+   ],
+   "orphanage": [
+    6.1322,
+    1.23,
+    ""
+   ],
+   "park": [
+    6.1262,
+    1.2218,
+    ""
+   ]
+  }
+ },
+ "cotonou": {
+  "bbox": [
+   6.346,
+   6.372,
+   2.414,
+   2.44
+  ],
+  "center": [
+   6.356,
+   2.433
+  ],
+  "seed": 23,
+  "floors": [
+   1,
+   3
+  ],
+  "core": 800,
+  "tall": 0.04,
+  "pois": {
+   "church": [
+    6.35425,
+    2.43735,
+    "Cathédrale Notre-Dame de Miséricorde"
+   ],
+   "landmark": [
+    6.36545,
+    2.41835,
+    "Place de l'Étoile Rouge"
+   ],
+   "home": [
+    6.359,
+    2.43,
+    ""
+   ],
+   "orphanage": [
+    6.3615,
+    2.427,
+    ""
+   ]
+  }
+ },
+ "accra": {
+  "bbox": [
+   5.533,
+   5.557,
+   -0.216,
+   -0.188
+  ],
+  "center": [
+   5.546,
+   -0.206
+  ],
+  "seed": 37,
+  "floors": [
+   1,
+   4
+  ],
+  "core": 900,
+  "tall": 0.06,
+  "pois": {
+   "church": [
+    5.54165,
+    -0.20935,
+    "Holy Trinity Cathedral"
+   ],
+   "landmark": [
+    5.5479,
+    -0.1924,
+    "Black Star Gate"
+   ],
+   "market": [
+    5.5477,
+    -0.2083,
+    "Makola Market"
+   ],
+   "home": [
+    5.55,
+    -0.203,
+    ""
+   ],
+   "orphanage": [
+    5.5525,
+    -0.209,
+    ""
+   ]
+  }
+ },
+ "abidjan": {
+  "bbox": [
+   5.312,
+   5.338,
+   -4.032,
+   -4.006
+  ],
+  "center": [
+   5.324,
+   -4.019
+  ],
+  "seed": 41,
+  "floors": [
+   2,
+   6
+  ],
+  "core": 900,
+  "tall": 0.3,
+  "tiles": 4,
+  "pois": {
+   "church": [
+    5.326,
+    -4.017,
+    ""
+   ],
+   "landmark": [
+    5.3319,
+    -4.0196,
+    "Cathédrale Saint-Paul"
+   ],
+   "home": [
+    5.3215,
+    -4.021,
+    ""
+   ],
+   "orphanage": [
+    5.329,
+    -4.015,
+    ""
+   ]
+  }
+ },
+ "lagos": {
+  "bbox": [
+   6.445,
+   6.465,
+   3.378,
+   3.402
+  ],
+  "center": [
+   6.4545,
+   3.3895
+  ],
+  "seed": 53,
+  "floors": [
+   2,
+   6
+  ],
+  "core": 900,
+  "tall": 0.25,
+  "pois": {
+   "church": [
+    6.4503,
+    3.3901,
+    "Cathedral Church of Christ"
+   ],
+   "landmark": [
+    6.4541,
+    3.3893,
+    "Tinubu Square"
+   ],
+   "market": [
+    6.4565,
+    3.3869,
+    "Balogun Market"
+   ],
+   "home": [
+    6.458,
+    3.393,
+    ""
+   ],
+   "orphanage": [
+    6.46,
+    3.388,
+    ""
+   ]
+  }
+ },
+ "paris": {
+  "bbox": [
+   48.85,
+   48.865,
+   2.284,
+   2.309
+  ],
+  "center": [
+   48.8575,
+   2.299
+  ],
+  "seed": 67,
+  "floors": [
+   5,
+   6
+  ],
+  "core": 2000,
+  "tall": 0.0,
+  "tiles": 6,
+  "nopaths": 1,
+  "levels": {
+   "Tour Eiffel": 1
+  },
+  "pois": {
+   "landmark": [
+    48.85826,
+    2.2945,
+    "Tour Eiffel"
+   ],
+   "church": [
+    48.858,
+    2.3039,
+    "Église Saint-Pierre du Gros Caillou"
+   ],
+   "home": [
+    48.8555,
+    2.303,
+    ""
+   ],
+   "orphanage": [
+    48.853,
+    2.301,
+    ""
+   ],
+   "park": [
+    48.8556,
+    2.2986,
+    "Champ de Mars"
+   ]
+  }
+ },
+ "london": {
+  "bbox": [
+   51.494,
+   51.508,
+   -0.14,
+   -0.113
+  ],
+  "center": [
+   51.5005,
+   -0.127
+  ],
+  "seed": 79,
+  "floors": [
+   3,
+   5
+  ],
+  "core": 2000,
+  "tall": 0.05,
+  "tiles": 6,
+  "nopaths": 1,
+  "pois": {
+   "landmark": [
+    51.5007,
+    -0.1246,
+    "Big Ben"
+   ],
+   "church": [
+    51.49935,
+    -0.1273,
+    "Westminster Abbey"
+   ],
+   "park": [
+    51.5025,
+    -0.134,
+    "St James's Park"
+   ],
+   "home": [
+    51.4965,
+    -0.133,
+    ""
+   ],
+   "orphanage": [
+    51.4955,
+    -0.129,
+    ""
+   ]
+  }
+ }
+}
