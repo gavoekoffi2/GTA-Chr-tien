@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1b2a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Lumière dans la Ville</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="loading" class="screen">
+  <div class="logo"><div class="cross"></div><h1>LUMIÈRE<span>dans la Ville</span></h1></div>
+  <div class="bar"><div id="loadbar"></div></div>
+  <p id="loadtext">Chargement…</p>
+</div>
+
+<div id="menu" class="screen hidden">
+  <div class="logo"><div class="cross"></div><h1>LUMIÈRE<span id="t-sub">dans la Ville</span></h1></div>
+  <p class="verse" id="menu-verse"></p>
+  <div class="col">
+    <button id="btn-continue" class="big gold"></button>
+    <button id="btn-new" class="big"></button>
+    <button id="btn-lang" class="big ghost"></button>
+  </div>
+  <p class="foot" id="menu-foot"></p>
+</div>
+
+<div id="charsel" class="sidepanel hidden">
+  <h2 id="cs-title"></h2>
+  <div class="row"><button id="cs-prev" class="round">‹</button><div id="cs-name" class="cs-name"></div><button id="cs-next" class="round">›</button></div>
+  <label id="cs-lname"></label><input id="cs-input" maxlength="16" autocomplete="off">
+  <label id="cs-ltop"></label><div id="cs-tops" class="swatches"></div>
+  <label id="cs-lbottom"></label><div id="cs-bottoms" class="swatches"></div>
+  <button id="cs-ok" class="big gold"></button>
+</div>
+
+<div id="hud" class="hidden">
+  <div id="topleft">
+    <canvas id="minimap" width="180" height="180"></canvas>
+    <div id="cityname"></div>
+  </div>
+  <div id="topright">
+    <div id="grade"><span id="grade-icon">✝</span><span id="grade-name"></span></div>
+    <div class="stat"><i>✝</i><div class="meter"><div id="st-faith"></div></div></div>
+    <div class="stat"><i>♥</i><div class="meter"><div id="st-love"></div></div></div>
+    <div class="stat"><i>✦</i><div class="meter"><div id="st-wisdom"></div></div></div>
+    <div id="talents"></div>
+  </div>
+  <div id="objective" class="hidden"></div>
+  <div id="prompt" class="hidden"></div>
+  <div id="toasts"></div>
+  <button id="btn-phone" class="hudbtn" aria-label="menu">☰</button>
+  <div id="touch" class="hidden">
+    <div id="joy"><div id="joyknob"></div></div>
+    <button id="tb-run" class="tbtn">»</button>
+    <button id="tb-act" class="tbtn main">E</button>
+    <button id="tb-veh" class="tbtn">🚗</button>
+  </div>
+</div>
+
+<div id="dialog" class="hidden">
+  <div id="dlg-who"></div>
+  <div id="dlg-text"></div>
+  <div id="dlg-choices"></div>
+  <div id="dlg-next">▶</div>
+</div>
+
+<div id="modal" class="hidden"><div id="modal-box"></div></div>
+<div id="fade"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
