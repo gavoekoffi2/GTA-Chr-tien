@@ -1,6 +1,5 @@
 // Véhicules : modèles procéduraux, conduite du joueur et circulation.
 import * as THREE from 'three';
-import { NX, NZ, P, R, roadX, roadZ } from './world.js';
 
 const glass = new THREE.MeshPhysicalMaterial({ color: 0x0c1418, roughness: 0.08, metalness: 0.6, clearcoat: 1 });
 const tyre = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
@@ -73,9 +72,6 @@ export function makeVehicle(type, color = 0x8a8f96) {
   return car;
 }
 
-const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
-const LANE = 2.9;
-
 export class Vehicle {
   constructor(type, color, scene) {
     this.type = type; this.mesh = makeVehicle(type, color); scene.add(this.mesh); this.scene = scene;
@@ -95,7 +91,7 @@ export class Vehicle {
     this.heading -= this.steer * grip * 1.9 * dt * Math.sign(this.speed || 1);
     const px = this.pos.x, pz = this.pos.z;
     this.pos.x += Math.sin(this.heading) * this.speed * dt; this.pos.z += Math.cos(this.heading) * this.speed * dt;
-    let hit = world.resolve(this.pos, this.radius, 0.3);
+    let hit = world.resolve(this.pos, this.radius);
     for (const o of others) { if (o === this) continue; const dx = this.pos.x - o.pos.x, dz = this.pos.z - o.pos.z, rr = this.radius + o.radius, d2 = dx * dx + dz * dz; if (d2 < rr * rr && d2 > 1e-4) { const d = Math.sqrt(d2); this.pos.x = o.pos.x + dx / d * rr; this.pos.z = o.pos.z + dz / d * rr; hit = true; } }
     if (hit) { const moved = Math.hypot(this.pos.x - px, this.pos.z - pz); this.speed = Math.sign(this.speed) * Math.min(Math.abs(this.speed), moved / Math.max(dt, 1e-3) * 0.9, Math.abs(this.speed) * 0.6); }
     this.mesh.rotation.y = this.heading; this.mesh.rotation.z = this.type === 'moto' ? -this.steer * grip * 0.35 : 0;
@@ -104,59 +100,58 @@ export class Vehicle {
   dispose() { this.scene.remove(this.mesh); this.mesh.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
 }
 
-// Circulation : les véhicules suivent la grille des rues et s'arrêtent devant tout obstacle.
+// Circulation : les véhicules suivent le vrai réseau de rues et s'arrêtent devant tout obstacle.
 export class Traffic {
-  constructor(scene, world, quality) {
+  constructor(scene, world, quality, center) {
     this.scene = scene; this.world = world; this.cars = []; this.side = world.cfg.left ? -1 : 1;
-    const cfg = world.cfg, rng = Math.random, n = quality === 'low' ? 7 : quality === 'medium' ? 12 : 18;
+    const cfg = world.cfg, rng = Math.random, n = quality === 'low' ? 8 : quality === 'medium' ? 14 : 22;
     const cols = [0xe9e9e6, 0x1c1f24, 0x8a8f96, 0x7a1f1f, 0x1f3f6f, 0xcfd3d6, 0x2f5d3a, 0xb99a5b];
     for (let i = 0; i < n; i++) {
       const r = rng(); let type = 'sedan', color = cols[rng() * cols.length | 0];
       if (i < cfg.motos && quality !== 'low') { type = 'moto'; color = [0xb3261e, 0x1f5fa8, 0x111111, 0xd98a00][i % 4]; }
-      else if (r < 0.3) { type = 'taxi'; color = cfg.taxi; } else if (r < 0.45) { type = 'van'; color = world.id === 'lagos' ? 0xf2c200 : world.id === 'accra' ? 0xe9e9e6 : color; }
+      else if (r < 0.3) { type = 'taxi'; color = cfg.taxi; } else if (r < 0.45) { type = 'van'; color = world.id === 'lagos' ? 0xf2c200 : color; }
       else if (r < 0.55) type = 'pickup'; else if (r < 0.6 + (world.id === 'london' ? 0.15 : 0)) { type = 'bus'; color = world.id === 'london' ? 0xc8102e : 0x2d6fa3; }
-      const v = new Vehicle(type, color, scene);
-      v.ai = { i: 1 + (rng() * (NX - 1) | 0), j: 1 + (rng() * (NZ - 1) | 0), dir: rng() * 4 | 0, s: 10 + rng() * 40, curve: null, target: 7 + rng() * 4, wait: 0 };
-      if (!this.valid(v.ai.i, v.ai.j, v.ai.dir)) v.ai.dir = this.options(v.ai.i, v.ai.j, -1)[0];
-      this.cars.push(v); this.step(v, 0, [], null);
+      const v = new Vehicle(type, color, scene); v.ai = { target: 7 + rng() * 4, wait: 0 };
+      this.cars.push(v); this.spawn(v, center, 40, 380);
     }
   }
-  valid(i, j, d) { const a = i + DIRS[d][0], b = j + DIRS[d][1]; return a >= 0 && a <= NX && b >= 0 && b <= NZ; }
-  options(i, j, from) { const o = []; for (let d = 0; d < 4; d++) if (d !== (from + 2) % 4 && this.valid(i, j, d)) o.push(d); return o.length ? o : [(from + 2) % 4]; }
-  lanePoint(i, j, d, s, out) { const [dx, dz] = DIRS[d]; out.x = roadX(i) + dx * s - dz * LANE * this.side; out.z = roadZ(j) + dz * s + dx * LANE * this.side; return out; }
-  step(v, dt, obstacles, player) {
-    const a = v.ai, edge = R / 2 + 1.5; let blocked = false;
-    const fx = Math.sin(v.heading), fz = Math.cos(v.heading);
-    for (const o of obstacles) { if (o === v) continue; const dx = o.x - v.pos.x, dz = o.z - v.pos.z, along = dx * fx + dz * fz; if (along < 0.5 || along > 9 + v.radius + (o.r || 0)) continue; const lat = Math.abs(dx * fz - dz * fx); if (lat < 1.5 + (o.r || 0.4)) { blocked = true; break; } }
-    const target = blocked ? 0 : (a.curve ? 4.5 : a.target);
-    if (blocked) a.wait += dt; else a.wait = 0;
-    v.speed += Math.max(-14 * dt, Math.min(4 * dt, target - v.speed)); if (v.speed < 0) v.speed = 0;
-    const move = v.speed * dt; let x, z, hx, hz;
-    if (a.curve) {
-      const c = a.curve; c.t = Math.min(1, c.t + move / c.len); const t = c.t, u = 1 - t;
-      x = u * u * c.p0.x + 2 * u * t * c.p1.x + t * t * c.p2.x; z = u * u * c.p0.z + 2 * u * t * c.p1.z + t * t * c.p2.z;
-      hx = 2 * u * (c.p1.x - c.p0.x) + 2 * t * (c.p2.x - c.p1.x); hz = 2 * u * (c.p1.z - c.p0.z) + 2 * t * (c.p2.z - c.p1.z);
-      if (t >= 1) { a.i = c.ni; a.j = c.nj; a.dir = c.nd; a.s = edge; a.curve = null; }
-    } else {
-      a.s += move; const p = this.lanePoint(a.i, a.j, a.dir, a.s, {}); x = p.x; z = p.z; [hx, hz] = DIRS[a.dir];
-      if (a.s >= P - edge) {
-        const ni = a.i + DIRS[a.dir][0], nj = a.j + DIRS[a.dir][1], opts = this.options(ni, nj, a.dir);
-        const nd = opts.includes(a.dir) && Math.random() < 0.55 ? a.dir : opts[Math.random() * opts.length | 0];
-        const p0 = { x, z }, p2 = this.lanePoint(ni, nj, nd, edge, {}), k = (p2.x - p0.x) * hx + (p2.z - p0.z) * hz;
-        const p1 = { x: p0.x + hx * k, z: p0.z + hz * k };
-        a.curve = { p0, p1, p2, t: 0, ni, nj, nd, len: Math.max(3, Math.hypot(p1.x - p0.x, p1.z - p0.z) + Math.hypot(p2.x - p1.x, p2.z - p1.z)) };
-      }
-    }
-    v.pos.x = x; v.pos.z = z;
-    if (hx || hz) { const want = Math.atan2(hx, hz); let d = want - v.heading; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; v.heading += d * Math.min(1, dt * 8 + (dt === 0 ? 1 : 0)); }
+  drivable(i) { return this.world.nodes[i].adj.some(e => e.cls <= 3); }
+  spawn(v, c, rmin, rmax) {
+    const w = this.world; let ids = w.nodesNear(c.x, c.z, rmax).filter(i => this.drivable(i) && Math.hypot(w.nodes[i].x - c.x, w.nodes[i].z - c.z) >= rmin);
+    if (!ids.length) ids = [w.nearestNode(c.x, c.z, 3)];
+    const a = ids[Math.random() * ids.length | 0]; const e = this.pick(a, -1); if (!e) return;
+    Object.assign(v.ai, { a, b: e.to, edge: e, t: 0, len: this.len(a, e.to), wait: 0 }); v.speed = 0;
+    const p = this.point(v.ai); v.pos.set(p.x, 0, p.z); v.heading = Math.atan2(w.nodes[e.to].x - w.nodes[a].x, w.nodes[e.to].z - w.nodes[a].z); v.mesh.rotation.y = v.heading;
+  }
+  len(a, b) { const n = this.world.nodes; return Math.hypot(n[b].x - n[a].x, n[b].z - n[a].z) || 0.1; }
+  pick(at, from) {
+    const n = this.world.nodes, adj = n[at].adj; let opts = adj.filter(e => e.cls <= 3 && e.ok && e.to !== from);
+    if (!opts.length) opts = adj.filter(e => e.cls <= 3 && e.ok); if (!opts.length) opts = adj.filter(e => e.cls <= 3); if (!opts.length) return null;
+    if (from < 0) return opts[Math.random() * opts.length | 0];
+    const fx = n[at].x - n[from].x, fz = n[at].z - n[from].z, fl = Math.hypot(fx, fz) || 1; let tot = 0;
+    const ws = opts.map(e => { const dx = n[e.to].x - n[at].x, dz = n[e.to].z - n[at].z, dl = Math.hypot(dx, dz) || 1, dot = (fx * dx + fz * dz) / (fl * dl); const w = (dot > 0.8 ? 5 : dot > -0.2 ? 1.6 : 0.15) * (e.cls <= 2 ? 2 : 1); tot += w; return w; });
+    let r = Math.random() * tot; for (let i = 0; i < opts.length; i++) { r -= ws[i]; if (r <= 0) return opts[i]; } return opts[0];
+  }
+  point(a) { const n = this.world.nodes, A = n[a.a], B = n[a.b], u = a.t / a.len, dx = (B.x - A.x) / a.len, dz = (B.z - A.z) / a.len, lane = Math.min(2.9, a.edge.w / 4) * this.side; return { x: A.x + (B.x - A.x) * u - dz * lane, z: A.z + (B.z - A.z) * u + dx * lane }; }
+  step(v, dt, obstacles) {
+    const a = v.ai; if (!a.edge) return; let blocked = false; const fx = Math.sin(v.heading), fz = Math.cos(v.heading);
+    for (const o of obstacles) { if (o.ref === v) continue; const dx = o.x - v.pos.x, dz = o.z - v.pos.z, along = dx * fx + dz * fz; if (along < 0.4 || along > 8 + v.radius + (o.r || 0)) continue; if (Math.abs(dx * fz - dz * fx) < 1.3 + (o.r || 0.4)) { blocked = true; break; } }
+    a.wait = blocked ? a.wait + dt : 0;
+    const want = blocked && a.wait < 12 ? 0 : (a.edge.cls <= 2 ? a.target : a.target * 0.65) * (a.len - a.t < 7 ? 0.6 : 1);
+    v.speed += Math.max(-16 * dt, Math.min(4 * dt, want - v.speed)); if (v.speed < 0) v.speed = 0;
+    a.t += v.speed * dt;
+    while (a.t >= a.len) { const e = this.pick(a.b, a.a); if (!e) { a.t = 0; break; } a.t -= a.len; a.a = a.b; a.b = e.to; a.edge = e; a.len = this.len(a.a, a.b); }
+    const p = this.point(a), k = Math.min(1, dt * 5), ox = v.pos.x, oz = v.pos.z;
+    v.pos.x += (p.x - v.pos.x) * k; v.pos.z += (p.z - v.pos.z) * k;
+    const mx = v.pos.x - ox, mz = v.pos.z - oz;
+    if (mx * mx + mz * mz > 1e-5) { const wantH = Math.atan2(mx, mz); let d = wantH - v.heading; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; v.heading += d * Math.min(1, dt * 6); }
     v.mesh.rotation.y = v.heading; v.spin(dt);
   }
-  update(dt, extraObstacles, playerPos) {
+  update(dt, extraObstacles, pp) {
     const obs = this.cars.map(c => ({ x: c.pos.x, z: c.pos.z, r: c.radius, ref: c })).concat(extraObstacles);
     for (const v of this.cars) {
-      const far = playerPos && Math.abs(v.pos.x - playerPos.x) + Math.abs(v.pos.z - playerPos.z) > 260;
-      v.mesh.visible = !far;
-      this.step(v, dt, obs.filter(o => o.ref !== v), null);
+      if (pp && Math.abs(v.pos.x - pp.x) + Math.abs(v.pos.z - pp.z) > 520) this.spawn(v, pp, 180, 380);
+      this.step(v, dt, obs);
     }
   }
   dispose() { for (const c of this.cars) c.dispose(); this.cars = []; }

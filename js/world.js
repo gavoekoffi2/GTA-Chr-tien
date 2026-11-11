@@ -5,7 +5,7 @@ import { S, L } from './state.js';
 export const WIDTH = [14, 11, 9, 7, 4.5, 2.5];
 export const CITIES = {
   lome: { name: 'Lomé', country: ['Togo', 'Togo'], water: 'ocean', ground: 'laterite', tree: 'palm', en: false,
-    walls: ['#e9d8b4', '#d9b98a', '#f1e7d0', '#c9d6c2', '#e3c0a0', '#cfd8e0'], taxi: 0xf2c200, motos: 6, grade: 0, landmark: ["Monument de l'Indépendance", 'Independence Monument'] },
+    walls: ['#e2c48c', '#d2a070', '#eadfc0', '#b9c9ae', '#dba882', '#b8c6d2', '#c9805a'], taxi: 0xf2c200, motos: 6, grade: 0, landmark: ["Monument de l'Indépendance", 'Independence Monument'] },
   cotonou: { name: 'Cotonou', country: ['Bénin', 'Benin'], water: 'ocean', ground: 'laterite', tree: 'palm', en: false,
     walls: ['#f0dcb0', '#e8c79a', '#d6e2d0', '#f3ead8', '#e0b99a'], taxi: 0xf2c200, motos: 8, grade: 2, landmark: ["Place de l'Étoile Rouge", 'Red Star Square'] },
   accra: { name: 'Accra', country: ['Ghana', 'Ghana'], water: 'ocean', ground: 'laterite', tree: 'palm', en: true,
@@ -302,7 +302,7 @@ export class World {
     const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
     this.mats['mark'] = new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
     const mk = this.buckets['mark'] = new Bucket();
-    const dirt = this.cfg.ground === 'laterite' ? 'tex:sand' : 'tex:pave';
+    const dirt = 'tex:pave';
     const disc = (b, x, z, r, y) => { for (let k = 0; k < 8; k++) { const a0 = k * Math.PI / 4, a1 = a0 + Math.PI / 4; b.tri([x, y, z], [x + Math.cos(a0) * r, y, z + Math.sin(a0) * r], [x + Math.cos(a1) * r, y, z + Math.sin(a1) * r], 6); } };
     this.nodes.forEach((n, i) => {
       for (const e of n.adj) {
