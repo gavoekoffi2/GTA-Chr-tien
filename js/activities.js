@@ -143,7 +143,7 @@ export class Activities {
   async act_ambulance(A) {
     const G = this.G, w = this.world, pl = G.player, hp = w.poi('hospital'), s = w.roadside(A.spot.x, A.spot.z, 7);
     const v = this.lend('minibus', 0xf4f4f2, s.x, s.z, s.h, { darkBumper: false }), red = new THREE.MeshStandardMaterial({ color: 0xc62828, emissive: 0x550000 });
-    for (const sx of [-0.875, 0.875]) { v.mesh.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.62, 0.2), red), { position: new THREE.Vector3(sx, 1.45, -0.6) })); v.mesh.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.2, 0.62), red), { position: new THREE.Vector3(sx, 1.45, -0.6) })); }
+    for (const sx of [-0.875, 0.875]) for (const [h, d] of [[0.62, 0.2], [0.2, 0.62]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.02, h, d), red); c.position.set(sx, 1.45, -0.6); v.mesh.add(c); }
     const bar = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.25), new THREE.MeshStandardMaterial({ color: 0x1f5fa8, emissive: 0x1f5fa8, emissiveIntensity: 0.6 })); bar.position.set(0, 2.02, 1.4); v.mesh.add(bar);
     if (pl.vehicle) pl.exit(); pl.enter(v); let saved = 0, t0 = 0;
     for (let n = 0; n < 3; n++) {

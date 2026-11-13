@@ -100,7 +100,7 @@ export const audio = {
     if (this.el && this.unlocked && this.now && !this.special) { if (v < 0.01 && !this.el.paused && tv === 0) this.el.pause(); else if (tv > 0 && this.el.paused && this.el.src) this.el.play().catch(() => {}); }
     if (!ctx) return; const t = ctx.currentTime, amb = on && !c.menu ? 1 : 0;
     env.hum.gain.setTargetAtTime(amb * (0.05 + 0.03 * (1 - c.night)) * (c.inVehicle ? 0.6 : 1), t, 0.5);
-    env.waves.gain.setTargetAtTime(amb * c.shore * (0.1 + 0.07 * Math.sin(t * 0.7)), t, 0.4);
+    env.waves.gain.setTargetAtTime(amb * (Number.isFinite(c.shore) ? c.shore : 0) * (0.1 + 0.07 * Math.sin(t * 0.7)), t, 0.4);
     const sp = Math.abs(c.speed), eg = amb && c.inVehicle ? (c.moto ? 0.05 : 0.035) + Math.min(0.04, sp * 0.003) : 0;
     env.engGain.gain.setTargetAtTime(eg, t, 0.12); env.engine.frequency.setTargetAtTime((c.moto ? 62 : 38) + sp * (c.moto ? 9 : 5.5), t, 0.1); env.engFilter.frequency.setTargetAtTime(380 + sp * 60, t, 0.2); env.engine.type = c.moto ? 'square' : 'sawtooth';
     // klaxons lointains de la circulation
