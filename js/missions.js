@@ -5,6 +5,7 @@ import { MISSIONS, WALK_MISSIONS, VERSES, GRADES } from './content.js';
 import { CITIES } from './world.js';
 import { makeMarker, makeItem } from './npc.js';
 import { audio } from './audio.js';
+import { makeIcon, scaleIcon } from './activities.js';
 
 const CANCEL = { cancel: true };
 const TXT = {
@@ -33,6 +34,7 @@ export class Missions {
     for (const def of this.available()) {
       const p = this.at(def.at, { dx: def.dx, dz: def.dz }), poi = this.world.poi(def.at);
       const o = { def, x: p.x, z: p.z, npc: null, marker: makeMarker(def.mode === 'walk' ? 0xf5c542 : 0x5fb7f0) };
+      o.icon = makeIcon(def.mode === 'walk' ? '✝' : '☀', def.mode === 'walk' ? '#d9a520' : '#2f8fd6'); o.icon.position.y = 5.2; o.marker.add(o.icon);
       o.marker.position.set(p.x, 0, p.z); this.G.scene.add(o.marker); this.offers.push(o);
       if (def.giver) { const npc = await this.G.crowd.addStatic(def.giver, p.x, p.z, Math.atan2(p.x - poi.cx, p.z - poi.cz), def.ganim, def.gname); if (gen !== this.gen) { this.G.crowd.removeStatic(npc); return; } o.npc = npc; o.x = npc.x; o.z = npc.z; o.marker.position.set(npc.x, 0, npc.z); }
     }
@@ -124,7 +126,7 @@ export class Missions {
     const ws = this.waiters.slice();
     for (const w of ws) { let r; try { r = w.check(dt); } catch (e) { r = false; } if (r) { const i = this.waiters.indexOf(w); if (i >= 0) this.waiters.splice(i, 1); w.resolve(r); } }
     const bob = Math.sin(this.time * 3) * 0.12;
-    for (const o of this.offers) { o.marker.userData.dia.position.y = 2.5 + bob; o.marker.userData.dia.rotation.y += dt * 2; if (o.npc) o.marker.position.set(o.npc.x, 0, o.npc.z); }
+    for (const o of this.offers) { if (o.icon && o.marker.visible) { o.icon.position.y = 5.2 + bob; scaleIcon(o.icon, this.G.player.cam); } o.marker.userData.dia.position.y = 2.5 + bob; o.marker.userData.dia.rotation.y += dt * 2; if (o.npc) o.marker.position.set(o.npc.x, 0, o.npc.z); }
     for (const it of this.items) { it.mesh.userData.box.position.y = 1 + bob; it.mesh.userData.box.rotation.y += dt * 2.5; }
   }
   dispose() { this.cancel(); this.clearOffers(); for (const it of this.items) this.G.scene.remove(it.mesh); this.items = []; }

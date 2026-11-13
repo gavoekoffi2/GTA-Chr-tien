@@ -16,6 +16,21 @@ Un jeu en monde ouvert qui édifie : on incarne un personnage africain qui march
 - **Radios** : Radio Akwaba, Radio Cantiques, Radio Paix, Radio Jeunesse, et « Ma musique » pour ses propres chansons.
 - **Ville plus vivante** : façades variées avec relief, boutiques, murs de clôture, poteaux et fils électriques, véhicules garés, vendeuses sous parasol, kiosques, rues en terre hors du centre.
 
+## Activités et imprévus
+
+De grandes icônes dans la ville signalent des activités rejouables, avec chrono et record :
+
+| Icône | Activité | Où |
+| --- | --- | --- |
+| 🏁 | Course de moto à travers la ville, de point de contrôle en point de contrôle | Monument |
+| 🚑 | Ambulancier : ramener 3 blessés à l'hôpital | Hôpital |
+| ⚽ | Tirs au but face au gardien | Stade |
+| 🎵 | Chorale de l'église (jeu de rythme, touches D F J K ou écran tactile) | Église |
+| 📖 | Quiz éclair : retrouver la référence de 8 versets | École |
+| 🧹 | Grand nettoyage du quartier | Jardin |
+
+Des imprévus ❗ surgissent aussi en se promenant : un voleur à rattraper, un enfant perdu à ramener à sa maman, une grand-mère à accompagner à l'église, une voiture en panne à pousser. Le menu ☰ → Activités affiche la liste et trace l'itinéraire GPS sur la mini-carte.
+
 ## Lancer le jeu
 
 Le jeu est un site statique, sans étape de compilation. Il faut le servir par HTTP :
@@ -31,7 +46,8 @@ Puis ouvrir `http://localhost:8000`. Il peut aussi être publié tel quel sur Gi
 | Action | Ordinateur | Téléphone |
 | --- | --- | --- |
 | Se déplacer | ZQSD / WASD / flèches | manette à gauche |
-| Courir | Maj | bouton » |
+| Courir | Maj, ou double appui sur une direction | bouton », double-tape la manette |
+| Pause | P ou Échap | bouton ⏸ |
 | Regarder | glisser la souris | glisser à droite |
 | Action (parler, saluer, voyager) | E | bouton E |
 | Monter / descendre du véhicule | F | bouton 🚗 |

@@ -116,7 +116,7 @@ export class Economy {
   myVehicle() { const G = this.G, pl = G.player; if (pl.vehicle && pl.vehicle.owned) return pl.vehicle; let best = null, bd = 8; for (const v of G.vehicles) { const d = D(v.pos, pl.pos); if (d < bd) { bd = d; best = v; } } return best; }
   fuelPrompt() { const v = this.myVehicle(); if (!v) return null; const need = v.tank - v.fuel; if (need < 0.15) return null; const cost = r25(need * PRICE.litre); if (S.money >= cost) return t('fuel', { p: fmt(cost) }); const l = Math.floor(S.money / PRICE.litre * 10) / 10; return l >= 0.2 ? t('fuelPart', { l, p: fmt(Math.round(l * PRICE.litre)) }) : t('fuel', { p: fmt(cost) }); }
   refuel() { const v = this.myVehicle(); if (!v) return; const need = v.tank - v.fuel, cost = r25(need * PRICE.litre); if (S.money >= cost) { S.money -= cost; v.fuel = v.tank; ui.toast(t('fueled', { p: fmt(cost) }), true); } else { const l = Math.floor(S.money / PRICE.litre * 10) / 10; if (l < 0.2) { this.pay(cost); return; } const c = Math.round(l * PRICE.litre); S.money -= c; v.fuel += l; ui.toast(t('fueled', { p: fmt(c) }), true); } audio.sfx('pay'); this.warn = {}; this.sync(); this.G.refreshHud(); save(); }
-  sync() { for (const v of this.G.vehicles) S.fuel[v.isMoto ? 'moto' : 'car'] = Math.round(v.fuel * 100) / 100; }
+  sync() { for (const v of this.G.vehicles) if (!v.lent) S.fuel[v.isMoto ? 'moto' : 'car'] = Math.round(v.fuel * 100) / 100; }
 
   // ---------- achats ----------
   dealerMenu() {

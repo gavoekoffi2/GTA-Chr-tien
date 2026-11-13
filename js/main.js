@@ -11,6 +11,7 @@ import { setVehicleNight, setPlateStyle } from './cars.js';
 import { Crowd, makeMarker, makeItem } from './npc.js';
 import { Missions } from './missions.js';
 import { Economy, PRICE, fmt } from './economy.js';
+import { Activities, makeIcon, scaleIcon } from './activities.js';
 import { audio, STATIONS, CREDITS } from './audio.js';
 import { WALK_MISSIONS, CITY_MISSIONS, VERSES, GRADES, SCROLLS, GREETINGS } from './content.js';
 
@@ -24,7 +25,7 @@ const X = {
   mode: ['Choisis ton chemin', 'Choose your path'], walk: ['La Marche chrétienne', 'The Christian Walk'], walkD: ['De la nouvelle naissance à la maturité : 7 grades, 21 étapes. Prière, Parole, service, témoignage, combat, disciples.', 'From new birth to maturity: 7 ranks, 21 steps. Prayer, Word, service, witness, warfare, disciples.'],
   city: ['Lumière dans la ville', 'Light in the City'], cityD: ['Missions libres dans la ville : secourir, nourrir, réconcilier, pardonner. Vis ta foi au quotidien.', 'Free missions around the city: rescue, feed, reconcile, forgive. Live out your faith every day.'],
   both: ['Les deux chemins restent ouverts : tu peux changer à tout moment depuis le menu ☰.', 'Both paths stay open: you can switch at any time from the ☰ menu.'],
-  tabs: [['Missions', 'Missions'], ['Ma Bible', 'My Bible'], ['Grades', 'Ranks'], ['Musique', 'Music'], ['Options', 'Options']], noVerse: ['Accomplis des missions et cherche les parchemins pour remplir ta Bible.', 'Complete missions and look for scrolls to fill your Bible.'],
+  tabs: [['Missions', 'Missions'], ['Ma Bible', 'My Bible'], ['Grades', 'Ranks'], ['Musique', 'Music'], ['Options', 'Options'], ['Activités', 'Activities']], noVerse: ['Accomplis des missions et cherche les parchemins pour remplir ta Bible.', 'Complete missions and look for scrolls to fill your Bible.'],
   callMoto: ['Faire venir ma moto', 'Bring my motorbike'], callCar: ['Faire venir ma voiture', 'Bring my car'], callZem: ['Appeler un zémidjan', 'Call a moto-taxi'], zemJob: ['Travailler comme zémidjan / taxi', 'Work as a moto-taxi / taxi'], stopJob: ['Arrêter le travail', 'Stop working'],
   outfit: ['Personnage et vêtements (tailleur)', 'Character and clothes (tailor)'], quality: ['Qualité graphique', 'Graphics quality'], sound: ['Sons', 'Sound'],
   menu: ['Menu principal', 'Main menu'], resume: ['Reprendre', 'Resume'], on: ['activés', 'on'], off: ['coupés', 'off'], done: ['accompli', 'done'], abandon: ['Abandonner la mission en cours', 'Abandon current mission'],
@@ -96,6 +97,7 @@ function updateSky(dt, force) {
 const progress = (p, text) => { $('loadbar').style.width = Math.round(p * 100) + '%'; if (text) $('loadtext').textContent = text; };
 async function enterCity(id, spawn) {
   G.switching = true;
+  if (G.act) G.act.dispose(); G.gps = null; G.gpsTarget = null;
   if (G.missions) G.missions.dispose(); if (G.eco) G.eco.dispose(); if (G.crowd) G.crowd.dispose(); if (G.traffic) G.traffic.dispose();
   if (G.player && G.player.vehicle) G.player.exit();
   for (const v of G.vehicles) v.dispose(); G.vehicles = []; for (const s of G.scrollItems) G.scene.remove(s.mesh); G.scrollItems = [];
@@ -112,13 +114,14 @@ async function enterCity(id, spawn) {
   if (S.owned.moto) G.spawnOwn('moto'); if (S.owned.car) G.spawnOwn('sedan');
   placeScrolls();
   G.eco = new Economy(G); await G.eco.setup();
+  G.act = new Activities(G); G.act.setup();
   G.missions = new Missions(G); G.switching = false; await G.missions.refresh(); progress(1);
   audio.ctxState.africa = !world.cfg.style;
   $('cityname').textContent = `${world.cityName()} · ${L(world.cfg.country)}`; updateSky(0, true); G.refreshHud();
 }
 G.spawnOwn = function (type) {
   const key = type === 'moto' ? 'moto' : 'car'; if (!S.owned[key]) return null;
-  let v = this.vehicles.find(q => q.type === type);
+  let v = this.vehicles.find(q => q.type === type && !q.lent);
   if (!v) { v = new Vehicle(type, type === 'moto' ? 0x1f5fa8 : 0xf4f4f0, this.scene, { rhd: !!this.world.cfg.left, plate: 2 }); v.owned = true; v.fuel = Math.min(v.tank, S.fuel[key]); v.marker = makeMarker(0x7dd87d, false); v.marker.userData.dia.position.y = type === 'moto' ? 1.9 : 2.2; this.scene.add(v.marker); const d = v.dispose.bind(v); v.dispose = () => { this.scene.remove(v.marker); d(); }; this.vehicles.push(v); }
   const pp = this.player.pos, s = this.world.roadside(pp.x, pp.z, type === 'moto' ? 2.5 : 8), p = this.world.freeNear(s.x, s.z, 1.2); v.place(p.x, p.z, s.h); v.pos.y = this.world.groundY(p.x, p.z); return v;
 };
@@ -128,7 +131,7 @@ function placeScrolls() {
   for (let i = 0; i < 10; i++) { const a = rng() * 6.283, d = 80 + rng() * 620, p = w.roadPoint(ch.x + Math.cos(a) * d, ch.z + Math.sin(a) * d, 60, rng); const id = w.id + i; if (S.scrolls[id]) continue;
     const m = makeItem(0xfff0a8); m.position.set(p.x, w.groundY(p.x, p.z), p.z); G.scene.add(m); G.scrollItems.push({ mesh: m, x: p.x, z: p.z, id, verse: SCROLLS[(i + ci * 3) % SCROLLS.length] }); }
 }
-async function travel(id) { await ui.fade(true); ui.show('loading'); await enterCity(id, 'station'); ui.show('loading', false); save(); await ui.fade(false); ui.toast(`${x('welcome')} ${L(CITIES[id].name)} !`, true); }
+async function travel(id) { if (G.act) G.act.stop(true); await ui.fade(true); ui.show('loading'); await enterCity(id, 'station'); ui.show('loading', false); save(); await ui.fade(false); ui.toast(`${x('welcome')} ${L(CITIES[id].name)} !`, true); }
 
 // ---------- Menus ----------
 function chooseMode() {
@@ -175,6 +178,8 @@ function phone(tab = 0) {
     body += S.verses.length ? S.verses.map(id => ui.scriptureHTML(VERSES[id])).join('<div style="height:8px"></div>') : `<p>${x('noVerse')}</p>`;
   } else if (tab === 2) {
     body += '<div class="list">' + GRADES.slice(1).map((g, i) => `<div class="item ${S.grade > i ? '' : 'lock'}"><div class="gradeline"><div class="ic">${g.icon}</div><div><b>${i + 1}. ${esc(L(g.name))}</b><small>${esc(L(g.desc))}</small><small style="color:#f5c542">${S.grade > i ? '🏅 ' + esc(L(g.badge)) : ''}</small></div></div></div>`).join('') + '</div>';
+  } else if (tab === 5) {
+    body += `<p style="opacity:.8">${L(['Rends-toi aux grandes icônes dans la ville, ou appuie sur 📍 pour afficher l’itinéraire sur la mini-carte. Des imprévus ❗ arrivent aussi dans la rue : voleur, enfant perdu, panne…', 'Head to the big icons in the city, or press 📍 to show the route on the minimap. Surprises ❗ also happen in the street: a thief, a lost child, a breakdown…'])}</p><div class="list">` + G.act.list().map((r, i) => `<div class="item"><div class="gradeline"><div class="ic">${r.a.icon}</div><div style="flex:1"><b>${esc(L(r.a.name))}</b><small>${esc(L(r.a.desc))}</small><small>🏆 ${r.rec} · 🪙 ${esc(L(r.a.reward))} · ${r.d} m</small></div><button class="big" data-gps="${i}" style="padding:8px 12px">📍</button></div></div>`).join('') + `</div><p style="opacity:.7;font-size:13px">${L(['Bonnes actions accomplies', 'Good deeds done'])} : ${S.deeds || 0}</p>`;
   } else if (tab === 3) {
     const mm2 = audio.musicMode();
     body += `<h3>${x('stations')}</h3><div class="opts">` + STATIONS.map((s, i) => `<button data-st="${i}" class="${audio.station === i ? 'sel' : ''}"><div class="station"><div class="ic">${s.icon}</div><div><b>${esc(L(s.name))}</b><br><small>${esc(L(s.desc))}${i === 4 && s.tracks.length ? ' · ' + s.tracks.length : ''}</small></div></div></button>`).join('') + `<button data-st="-1" class="${audio.station < 0 ? 'sel' : ''}"><div class="station"><div class="ic">🔇</div><div><b>${x('radioOff')}</b></div></div></button></div>`;
@@ -188,6 +193,7 @@ function phone(tab = 0) {
   const re = t => { ui.closeModal(); phone(t); };
   box.querySelectorAll('[data-t]').forEach(b => b.onclick = () => re(+b.dataset.t));
   box.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.mode = b.dataset.mode; save(); re(0); });
+  box.querySelectorAll('[data-gps]').forEach(b => b.onclick = () => { const r = G.act.list()[+b.dataset.gps]; G.gpsTarget = { x: r.s.x, z: r.s.z, label: `${r.a.icon} ${L(r.a.name)}` }; ui.closeModal(); });
   box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { audio.setStation(+b.dataset.st); re(3); });
   box.querySelectorAll('[data-mm]').forEach(b => b.onclick = () => { S.settings.music = b.dataset.mm; save(); re(3); });
   const add = box.querySelector('#add-songs'); if (add) { const inp = box.querySelector('#song-files'); add.onclick = () => inp.click(); inp.onchange = () => { if (inp.files.length) { audio.addUserFiles(inp.files); re(3); } }; }
@@ -212,6 +218,15 @@ function travelMenu() {
   box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const p = +b.dataset.p; if (p && !G.eco.pay(p)) return; ui.closeModal(); if (G.missions.active) G.missions.cancel(); G.eco.endJob(true); setTimeout(() => travel(b.dataset.c), 50); });
 }
 
+// ---------- GPS : itinéraire sur les vraies rues ----------
+let gpsT = 0, gpsKey = '';
+function updateGps(tg) {
+  const w = G.world, pp = G.player.pos; gpsT -= 0.3;
+  if (!tg || tg.x === undefined || Math.hypot(tg.x - pp.x, tg.z - pp.z) < 35) { G.gps = null; gpsKey = ''; return; }
+  const a = w.nearestMain(pp.x, pp.z), b = w.nearestMain(tg.x, tg.z), key = a + ',' + b; if (key === gpsKey && gpsT > 0) return; gpsKey = key; gpsT = 3;
+  const path = a === b ? null : w.findPath(a, b); G.gps = path ? [{ x: pp.x, z: pp.z }, ...path.map(i => w.nodes[i]), { x: tg.x, z: tg.z }] : null;
+}
+
 // ---------- Mini-carte ----------
 const mm = $('minimap'), mg = mm.getContext('2d'); let mmT = 0, hudT = 0;
 function drawMinimap() {
@@ -224,10 +239,13 @@ function drawMinimap() {
   for (const s of G.scrollItems) dot(s.x, s.z, '#fff0a8', 2.5, false);
   for (const b of G.eco.bottles) dot(b.x, b.z, '#3fae6a', 2, false);
   mg.font = '13px sans-serif'; mg.textAlign = 'center'; mg.textBaseline = 'middle';
+  if (G.gps && G.gps.length > 1) { mg.save(); mg.beginPath(); mg.rect(0, 0, N, N); mg.clip(); mg.strokeStyle = 'rgba(0,0,0,0.45)'; mg.lineWidth = 7; mg.lineJoin = mg.lineCap = 'round'; const pathDraw = () => { mg.beginPath(); G.gps.forEach((q, i) => { const px = N / 2 + (q.x - pp.x) * k, pz = N / 2 + (q.z - pp.z) * k; i ? mg.lineTo(px, pz) : mg.moveTo(px, pz); }); mg.stroke(); }; pathDraw(); mg.strokeStyle = '#c85cff'; mg.lineWidth = 4; pathDraw(); mg.restore(); }
+  mg.font = '15px sans-serif'; for (const ic of G.act.mapIcons()) { const p = place(ic.x, ic.z, ic.ch === '❗'); if (p) mg.fillText(ic.ch, p[0], p[1]); } mg.font = '13px sans-serif';
   for (const ic of G.eco.mapIcons()) { const p = place(ic.x, ic.z, false); if (p) mg.fillText(ic.ch, p[0], p[1]); }
   for (const v of G.vehicles) if (!v.rider) dot(v.pos.x, v.pos.z, '#7dd87d', 4, true);
   const m = G.missions; if (!m.active) for (const o of m.offers) dot(o.x, o.z, o.def.mode === 'walk' ? '#f5c542' : '#5fb7f0', 6, o.def.mode === S.mode);
-  const pulse = 5 + Math.sin(G.time * 5) * 1.5; for (const tg of m.targets) dot(tg.x, tg.z, '#ffffff', pulse, true, '#f5c542');
+  const pulse = 5 + Math.sin(G.time * 5) * 1.5; for (const tg of G.act.targets) if (tg && tg.x !== undefined) dot(tg.x, tg.z, '#ffffff', pulse, true, '#c85cff');
+  for (const tg of m.targets) dot(tg.x, tg.z, '#ffffff', pulse, true, '#f5c542');
   for (const tg of G.eco.targets) dot(tg.x, tg.z, '#7dd87d', pulse, true, '#ffffff');
   if (G.eco.ride) dot(G.eco.ride.dest.x, G.eco.ride.dest.z, '#ffffff', pulse, true, '#7dd87d');
   mg.save(); mg.translate(N / 2, N / 2); mg.rotate(-G.player.heading + Math.PI); mg.fillStyle = '#fff'; mg.strokeStyle = '#000'; mg.lineWidth = 2; mg.beginPath(); mg.moveTo(0, -9); mg.lineTo(6, 7); mg.lineTo(0, 3); mg.lineTo(-6, 7); mg.closePath(); mg.fill(); mg.stroke(); mg.restore();
@@ -240,14 +258,16 @@ function interact() {
   const pl = G.player, pp = pl.pos, inp = G.input, m = G.missions, w = G.world, eco = G.eco; let prompt = null, key = 'E';
   if (inp.take('KeyR')) audio.cycle(1);
   if (inp.take('KeyH')) audio.horn(pl.vehicle ? pl.vehicle.isMoto : true);
-  if (inp.take('KeyJ')) eco.toggleZemJob();
+  if (inp.take('KeyJ') && !G.act.active) eco.toggleZemJob();
   // véhicules
   if (eco.ride) { const n = eco.nearby(); prompt = n.prompt; if (inp.take('KeyE')) n.act(); inp.take('KeyF'); ui.setPrompt(prompt, 'E'); return; }
   if (pl.vehicle) { if (Math.abs(pl.vehicle.speed) < 3 && inp.take('KeyF')) { pl.exit(); return; } }
   else { let near = null; for (const v of G.vehicles) if (Math.hypot(v.pos.x - pp.x, v.pos.z - pp.z) < v.radius + 2.2) near = v; if (near) { prompt = near.isMoto ? x('enter') : x('drive'); key = 'F'; if (inp.take('KeyF')) { pl.enter(near); return; } } }
-  const near = eco.nearby();
+  const near = eco.nearby(), an = G.act.nearby();
+  if (G.act.active) { ui.setPrompt(prompt, key); inp.take('KeyE'); return; }
   if (m.prompt) { prompt = m.prompt; key = 'E'; }
-  else if (!m.active && m.nearOffer() && !pl.vehicle) { const o = m.nearOffer(); prompt = `${o.npc ? L(TALK) : L(START)} — ${L(o.def.title)}`; key = 'E'; if (inp.take('KeyE')) { eco.endJob(true); m.start(o); return; } }
+  else if (an) { prompt = an.prompt; key = 'E'; if (inp.take('KeyE')) { an.act(); return; } }
+  else if (!m.active && m.nearOffer() && !pl.vehicle && !G.act.busyEvent()) { const o = m.nearOffer(); prompt = `${o.npc ? L(TALK) : L(START)} — ${L(o.def.title)}`; key = 'E'; if (inp.take('KeyE')) { eco.endJob(true); m.start(o); return; } }
   else if (near) { prompt = near.prompt; key = 'E'; if (inp.take('KeyE')) { near.act(); return; } }
   else if (!m.active && !pl.vehicle) {
     const st = w.poi('station');
@@ -272,26 +292,29 @@ function frame() {
   if (playing && !ui.busy && inp.take('Tab')) phone(0);
   if (playing && !ui.busy && (inp.take('KeyP') || inp.take('Escape'))) { pauseGame(); renderer.render(G.scene, camera); return; }
   if (G.state === 'menu') pl.yaw += dt * 0.06;
-  const peds = G.crowd.obstacles(), units = eco.vehicles(), all = G.traffic.cars.concat(G.vehicles, units);
+  const peds = G.crowd.obstacles(), units = eco.vehicles(), evCar = G.act.event && G.act.event.car ? [G.act.event.car] : [], all = G.traffic.cars.concat(G.vehicles, units, evCar);
   pl.pedBrake = false; pl.update(dt, inp, frozen, all, pl.vehicle ? peds : []);
   if (pl.pedBrake && G.time - pedToast > 8) { pedToast = G.time; ui.toast(x('peds')); }
   G.crowd.update(dt, { x: pl.pos.x, z: pl.pos.z, inVehicle: !!pl.vehicle });
-  const me = { x: pl.pos.x, z: pl.pos.z, r: pl.vehicle ? pl.vehicle.radius : 0.4, ref: pl.vehicle }, parked = G.vehicles.filter(v => !v.rider).map(v => ({ x: v.pos.x, z: v.pos.z, r: v.radius, ref: v }));
+  const me = { x: pl.pos.x, z: pl.pos.z, r: pl.vehicle ? pl.vehicle.radius : 0.4, ref: pl.vehicle }, parked = G.vehicles.concat(evCar).filter(v => !v.rider).map(v => ({ x: v.pos.x, z: v.pos.z, r: v.radius, ref: v }));
   G.traffic.update(dt, peds.concat([me], parked, eco.obstacles()), pl.pos);
   eco.update(dt, peds.concat(parked, G.traffic.cars.map(c => ({ x: c.pos.x, z: c.pos.z, r: c.radius, ref: c }))));
+  G.act.update(dt);
   for (const v of G.vehicles) { v.marker.visible = !v.rider; v.marker.position.set(v.pos.x, 0, v.pos.z); v.marker.userData.dia.rotation.y += dt * 2; }
   for (const s of G.scrollItems) s.mesh.userData.box.rotation.y += dt * 2;
   G.missions.update(dt);
   if (playing && !ui.busy) interact(); else ui.setPrompt(null);
   // objectif et tableau de bord
   const m = G.missions; hudT -= dt;
-  if (hudT <= 0 && playing) { hudT = 0.3; let title, text, tg = null; const es = eco.status();
+  if (hudT <= 0 && playing) { hudT = 0.3; let title, text, tg = null; const es = eco.status(), as = G.act.status();
     if (m.active) { title = L(m.active.def.title); text = m.objective || '…'; if (m.timer > 0) text += `  ⏱ ${Math.ceil(m.timer)} s`; tg = G.currentGoal(); }
+    else if (as) { title = as.title; text = as.text; if (as.x !== undefined) tg = as; }
     else if (es) { title = es.title; text = es.text; if (es.x !== undefined) tg = es; }
+    else if (G.gpsTarget) { title = '📍 GPS'; text = G.gpsTarget.label; tg = G.gpsTarget; if (Math.hypot(tg.x - pl.pos.x, tg.z - pl.pos.z) < 12) { G.gpsTarget = null; ui.toast(L(['Tu es arrivé !', 'You have arrived!']), true); } }
     else { const g = m.idleGoal(); title = g.title; text = g.text; if (g.x !== undefined) tg = g; }
     if (tg) text += ` — ${Math.round(Math.hypot(tg.x - pl.pos.x, tg.z - pl.pos.z))} m`;
     const street = G.world.streetAt(pl.pos.x, pl.pos.z); $('cityname').textContent = street ? `${street} · ${G.world.cityName()}` : `${G.world.cityName()} · ${L(G.world.cfg.country)}`;
-    ui.setObjective(text, title); G.goalT = m.active ? tg : null; G.refreshHud();
+    ui.setObjective(text, title); G.goalT = m.active || as ? tg : null; updateGps(tg); G.refreshHud();
     const own = pl.vehicle && pl.vehicle.owned ? pl.vehicle : null; ui.show('fuel', !!own); if (own) { const f = own.fuel / own.tank; $('fuel-bar').style.width = Math.round(f * 100) + '%'; $('fuel').classList.toggle('low', f < 0.15); }
     if (ui.touch) { ui.show('tb-job', !!own); ui.show('tb-horn', !!pl.vehicle); }
   }
