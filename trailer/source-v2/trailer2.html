@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Zion City — bande-annonce v2</title>
+<script type="importmap">{"imports":{"three":"./lib/three.module.js"}}</script>
+<style>
+@font-face{font-family:Anton;src:url(fonts/Anton-400.woff2)}
+@font-face{font-family:Cinzel;src:url(fonts/Cinzel-700.woff2);font-weight:700}
+@font-face{font-family:Mont;src:url(fonts/Montserrat-800.woff2);font-weight:100 900}
+:root{--gold:#F6C445;--gold2:#FFE7A3;--red:#E5232E}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);background:#000;overflow:hidden}
+#stage{position:absolute;inset:0;overflow:hidden;background:#000;transform-origin:50% 50%}
+.lay{position:absolute;inset:0;width:100%;height:100%}
+#bg{background:radial-gradient(ellipse at 50% 45%,#1d1206 0,#070503 60%,#000 100%)}
+#fx{mix-blend-mode:screen}
+#strobe{opacity:0}
+#flash{background:#fff;opacity:0}
+#leak{mix-blend-mode:screen;opacity:0}
+#vhs{opacity:0;mix-blend-mode:screen}
+.bar{position:absolute;left:0;width:100%;height:var(--bar);background:#000;z-index:40}
+#barT{top:0}#barB{bottom:0}
+.sc{position:absolute;inset:0;display:none;z-index:20}
+.t{position:absolute;white-space:nowrap;color:#fff}
+.anton{font-family:Anton;text-transform:uppercase;line-height:.9}
+.mont{font-family:Mont;font-weight:800;letter-spacing:.3em;text-transform:uppercase}
+.cin{font-family:Cinzel;font-weight:700}
+.gold{color:var(--gold)}
+.cx{left:50%;transform:translateX(-50%)}
+.sh{text-shadow:0 6px 34px rgba(0,0,0,.85)}
+.chip{position:absolute;z-index:45;font-family:Mont;font-weight:700;font-size:15px;letter-spacing:.22em;color:#fff;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.4);padding:7px 12px;border-radius:4px;display:none}
+.slash{position:absolute;left:-20%;width:140%;height:16px;background:linear-gradient(90deg,transparent,var(--gold) 20%,#fff 50%,var(--gold) 80%,transparent);box-shadow:0 0 40px var(--gold);transform-origin:50% 50%}
+.strike{position:absolute;left:-4%;top:52%;height:.12em;background:var(--red);box-shadow:0 0 18px rgba(229,35,46,.8)}
+.medal{position:absolute;width:150px;text-align:center;transform-style:preserve-3d}
+.medal .d{width:96px;height:96px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Cinzel;font-weight:700;font-size:38px;color:#2a1a02;background:radial-gradient(circle at 35% 30%,#fff3c4,#f6c445 40%,#a86d12 80%);box-shadow:0 0 0 3px rgba(255,231,163,.6),0 10px 40px rgba(0,0,0,.6)}
+.medal .l{font-family:Mont;font-weight:700;font-size:16px;letter-spacing:.05em;color:#fff;white-space:normal;line-height:1.25;text-transform:uppercase}
+.pop{position:absolute;font-family:Anton;font-size:64px;color:var(--gold);text-shadow:0 0 30px rgba(246,196,69,.7),0 6px 20px #000}
+.line{position:absolute;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+</style></head>
+<body><div id="stage">
+  <div id="bg" class="lay"></div>
+  <canvas id="photo" class="lay"></canvas>
+  <canvas id="logo" class="lay" style="display:none"></canvas>
+  <canvas id="fx" class="lay"></canvas>
+  <div id="strobe" class="lay"></div>
+  <svg id="crack" class="lay" style="display:none;z-index:25" viewBox="0 0 1920 1080" preserveAspectRatio="none"></svg>
+  <div id="scenes" class="lay"></div>
+  <div id="leak" class="lay"></div>
+  <canvas id="vhs" class="lay"></canvas>
+  <div id="flash" class="lay"></div>
+  <div id="chip" class="chip">IMAGES DU JEU</div>
+  <div id="barT" class="bar"></div><div id="barB" class="bar"></div>
+</div>
+<script type="module">
+import { createPhotoGL } from './photogl.js';
+import { createLogo } from './logo3d.js';
+const Q = new URLSearchParams(location.search), V = Q.get('fmt') === 'v';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080, BAR = V ? 0 : 110;
+const ds = document.documentElement.style; ds.setProperty('--W', W + 'px'); ds.setProperty('--H', H + 'px'); ds.setProperty('--bar', BAR + 'px');
+for (const id of ['photo', 'logo', 'fx', 'vhs']) { const c = document.getElementById(id); c.width = W; c.height = H; }
+const TL = await (await fetch('timeline2.json')).json(); const FR = await (await fetch('frames.json')).json();
+const CRED = await (await fetch('p2/credits.json')).json();
+const DUR = TL.END, EVENTS = []; window.EVENTS = EVENTS; window.DURATION = DUR;
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), P = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => 1 - (1 - clamp(x)) ** 3, eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2; };
+const spring = (tau, w = 15, z = .5) => tau <= 0 ? 0 : 1 - Math.exp(-z * w * tau) * Math.cos(w * Math.sqrt(1 - z * z) * tau);
+const lerp = (a, b, x) => a + (b - a) * x;
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z']/g, '');
+function wt(line, word, n = 1) { const ws = TL.lines[line].words; let k = 0; for (const w of ws) if (norm(w[2]).startsWith(norm(word)) && ++k === n) return w[0]; console.error('mot introuvable', line, word); return NaN; }
+const Lt = k => TL.lines[k].t, Le = k => TL.lines[k].t + TL.lines[k].d;
+const ev = (t, name, g = 1) => EVENTS.push({ t: +t.toFixed(3), name, g });
+const { FLIP, REVEAL, DROP, VERSE, LOGO } = TL;
+// ---------- ressources ----------
+const IM = {};
+function loadImg(src) { if (IM[src]) return IM[src]; const i = new Image(); i.src = src; IM[src] = i; return i; }
+const photo = n => ({ img: `p2/${n}.jpg`, dep: `p2/${n}_d.png` });
+// ---------- plans (EDL) ----------
+const C = [];
+// src : 'p:nom' photo réelle (+ profondeur) · 'g:clip' séquence du jeu · 's:nom' capture du jeu
+function shot(t0, t1, src, o = {}) { C.push(Object.assign({ t0, t1, src, z: [1.04, 1.14], cam: [-1, 0, 1, 0], pan: [0, 0, 0, 0], focus: .45, fx: .5, fy: .5, g: {}, fin: 0, fout: 0, whip: 0, off: 0, speed: 1 }, o)); }
+const WARM = { warm: .55, con: 1.12, sat: 1.12, expo: 1.05 }, GOLD = { warm: .9, con: 1.15, sat: 1.15, expo: 1.08, vig: .7 };
+// 2. ville réelle
+const tLib = wt('l06', 'liberte') - .5, tUne = wt('l06', 'Une') - .12;
+shot(REVEAL + 6.25, tUne, 'p:lome_corniche', { z: [1.05, 1.2], cam: [-1.2, 0, 1.2, .2], focus: .35, g: WARM, fin: .35 });
+shot(tUne, Le('l06') - .2, 'p:mon_front', { z: [1.0, 1.16], cam: [0, -.6, 0, .8], focus: .5, g: WARM, whip: 1 });
+shot(Le('l06') - .2, Lt('l07') - .1, 'g:zem', { z: [1.05, 1.12], off: .5, g: WARM, game: 1, whip: 1 });
+// 3. au lieu de commettre des crimes → bonnes actions
+const tCrimes = wt('l07', 'crimes') - .05, tTu1 = wt('l08', 'tu') - .1;
+shot(Lt('l07') - .1, tTu1, 'p:lome_night', { z: [1.1, 1.25], cam: [-1, 0, 1, 0], focus: .5, g: { expo: .75, sat: .3, con: 1.35, tint: .7, tcol: [1.4, .35, .35], vig: 1.1 } });
+shot(tTu1, Lt('l09') - .1, 'p:lome_palms', { z: [1.15, 1.02], cam: [1, 0, -1, 0], focus: .4, g: GOLD, whip: 2 });
+// 4. au lieu de… tu…
+const beats = [['l09', 'voler', 'donnes', 's:a_end', 'VOLER', 'TU DONNES'], ['l10', 'battre', 'pardonnes', 's:a_thief', 'TE BATTRE', 'TU PARDONNES'], ['l11', 'fuir', 'sers', 's:a_amb', 'FUIR', 'TU SERS']];
+beats.forEach(([l, x, y, src], i) => { const a = Lt(l) - .1, tu = wt(l, 'tu') - .08, b = i < 2 ? Lt(beats[i + 1][0]) - .1 : Lt('l12') - .1;
+  shot(a, tu, src, { z: [1.2, 1.3], cam: [0, 0, 0, 0], g: { sat: .15, expo: .55, con: 1.3, tint: .6, tcol: [1.4, .4, .4] }, game: 1 });
+  shot(tu, b, src, { z: [1.12, 1.04], g: { warm: .3, con: 1.08, sat: 1.15 }, game: 1, whip: 2 }); });
+// 5. grandir dans le Seigneur
+shot(Lt('l12') - .1, DROP, 'g:hero', { z: [1.0, 1.15], off: .3, speed: .9, g: GOLD, game: 1 });
+// 7. zémidjans + villes
+const tTrav = wt('l14', 'Traverse') - .1;
+shot(Lt('l14') - .1, wt('l14', 'zemidjan') - .1, 'p:lome_zems', { z: [1.05, 1.15], cam: [-1, 0, 1, 0], focus: .55, g: WARM, whip: 1 });
+shot(wt('l14', 'zemidjan') - .1, wt('l14', 'zemidjan') + .75, 'g:zem', { z: [1.04, 1.1], off: 1.0, speed: 1.2, g: WARM, game: 1, whip: 1 });
+shot(wt('l14', 'zemidjan') + .75, tTrav, 'p:marche_zem', { z: [1.05, 1.14], cam: [1, 0, -1, 0], focus: .5, g: WARM, whip: 1 });
+const CITIES = [['Lomé', 'Togo', 'p:mon_storm', .5], ['Cotonou', 'Bénin', 'p:cot_zems', .5], ['Accra', 'Ghana', 'p:accra', .5], ['Abidjan', "Côte d'Ivoire", 'p:abidjan', .5], ['Lagos', 'Nigeria', 'p:lagos', .5], ['Paris', 'France', 'p:paris', .5], ['Londres', 'Royaume-Uni', 'p:londres', .5]];
+const cityT = CITIES.map(c => wt('l14', c[0]) - .12);
+shot(tTrav, cityT[0], 'p:lome_colombe', { z: [1.04, 1.12], cam: [-1, 0, 1, 0], focus: .4, g: WARM, whip: 1 });
+CITIES.forEach((c, i) => shot(cityT[i], i < 6 ? cityT[i + 1] : Lt('l15') - .1, c[2], { z: [1.06, 1.16], cam: [i % 2 ? 1 : -1, 0, i % 2 ? -1 : 1, 0], focus: .45, fx: c[3], g: WARM, whip: 1 }));
+// 8. Prie / Apprends / Aide / Grandis
+const PAAG = [['Prie', 'p:cath_low', {}], ['Apprends', 's:a_quiz', { game: 1 }], ['Aide', 's:a_amb', { game: 1 }], ['Grandis', 'p:lome_sunset', {}]];
+const paT = PAAG.map(p => wt('l15', p[0]) - .06);
+PAAG.forEach((p, i) => shot(paT[i] - (i === 0 ? .4 : 0), i < 3 ? paT[i + 1] : VERSE - .1, p[1], Object.assign({ z: [1.12, 1.02], cam: [0, -1, 0, 1], focus: .5, g: GOLD, whip: 2 }, p[2])));
+// 9. verset
+shot(VERSE - .1, Lt('l16') - .15, 'p:lome_beachsun', { z: [1.0, 1.12], cam: [-1, 0, .6, 0], focus: .3, g: { warm: .7, expo: .7, con: 1.1, vig: 1 }, fin: .9 });
+// 10. sois la lumière
+shot(Lt('l16') - .15, LOGO, 'p:lome_night', { z: [1.0, 1.18], cam: [0, .5, 0, -.5], focus: .5, g: { warm: .5, expo: 1.15, con: 1.15, sat: 1.2 }, whip: 1 });
+// 11. logo final sur Lomé de nuit floutée
+shot(LOGO, DUR, 'p:lome_night', { z: [1.2, 1.32], cam: [0, 0, 0, 0], g: { warm: .6, expo: .5, sat: .9, vig: 1.2 }, blurBG: .06 });
+for (const c of C) { c.img = c.src[0] === 'p' ? `p2/${c.src.slice(2)}.jpg` : c.src[0] === 's' ? `img/${c.src.slice(2)}.jpg` : null; c.dep = c.src[0] === 'p' ? `p2/${c.src.slice(2)}_d.png` : null; if (c.img) loadImg(c.img); if (c.dep) loadImg(c.dep); if (c.whip) ev(c.t0 - .12, 'whoosh', .55); }
+// ---------- scènes texte ----------
+const SC = [], SCN = $('scenes');
+function scene(t0, t1, html) { const el = document.createElement('div'); el.className = 'sc'; el.innerHTML = html; SCN.appendChild(el); SC.push({ t0, t1, el }); el.upd = () => {}; return el; }
+const q = (el, s) => el.querySelector(s), qa = (el, s) => [...el.querySelectorAll(s)];
+const S = V ? 1 : 1, CY = V ? 960 : 540;
+function slam(d, t, t0, from = 1.6, w = 16) { const k = spring(t - t0, w, .55); d.style.opacity = clamp((t - t0) / .06); return lerp(from, 1, k); }
+// --- 1. accroche
+{ const t0 = wt('l01', 'Tout') - .08, tG = wt('l01', 'GTA') - .05, t1 = Lt('l02') - .05;
+  const el = scene(0, t1, `<div class="t mont cx a" style="top:${CY - (V ? 260 : 210)}px;font-size:${V ? 34 : 30}px">Tout le monde connaît</div>
+    <div class="t anton cx g" style="top:${CY - (V ? 190 : 150)}px;font-size:${V ? 330 : 360}px;letter-spacing:.04em">GTA</div>`);
+  el.upd = t => { const a = q(el, '.a'); a.style.opacity = P(t, t0, t0 + .3) * (1 - P(t, t1 - .2, t1)); a.style.letterSpacing = (.2 + .15 * P(t, t0, t1)) + 'em';
+    const g = q(el, '.g'), s = slam(g, t, tG, 1.8); g.style.transform = `translateX(-50%) scale(${s * (1 + .03 * P(t, tG, t1))})`; g.style.opacity *= 1 - P(t, t1 - .15, t1);
+    const j = Math.max(0, 1 - (t - tG) / .5) * 14 + 3; g.style.textShadow = `${j}px 0 rgba(255,30,60,.85), ${-j}px 0 rgba(30,200,255,.75), 0 0 60px rgba(255,255,255,.25)`; };
+  ev(tG, 'impact', 1); }
+{ const t1 = Lt('l03') - .1, L3 = [['Voler', 'Voler des voitures'], ['Fuir', 'Fuir la police'], ['Semer', 'Semer le chaos']];
+  const tt = L3.map(l => wt('l02', l[0]) - .06);
+  const el = scene(Lt('l02') - .05, t1, L3.map((l, i) => `<div class="t anton cx w${i}" style="top:${CY - (V ? 330 : 250) + i * (V ? 200 : 175)}px;font-size:${V ? 104 : 150}px">${l[1]}<div class="strike" style="width:0"></div></div>`).join(''));
+  el.upd = t => { tt.forEach((a, i) => { const d = q(el, '.w' + i), s = slam(d, t, a, 1.7); const dim = i < 2 && t > tt[i + 1] ? .35 : 1; d.style.opacity = clamp((t - a) / .06) * dim * (1 - P(t, t1 - .2, t1));
+      d.style.transform = `translateX(-50%) scale(${s})`; d.style.color = i === 2 && t > wt('l02', 'chaos') - .05 ? '#ff3b3b' : '#fff';
+      d.style.textShadow = `0 0 ${i === 1 ? 50 : 20}px rgba(255,40,40,${.3 + .3 * Math.sin(t * 30)})`; }); };
+  ev(tt[0], 'impact', .8); ev(tt[0] + .1, 'alarm', .8); ev(tt[1], 'impact', .8); ev(wt('l02', 'chaos') - .05, 'glass', 1); }
+{ const t0 = Lt('l03') - .1, tR = wt('l03', 'renversait') - .05, t1 = FLIP + .5;
+  const el = scene(t0, t1, `<div class="t mont cx a" style="top:${CY - (V ? 200 : 150)}px;font-size:${V ? 40 : 36}px">Et si on</div>
+    <div class="t anton gold cx b" style="top:${CY - (V ? 120 : 90)}px;font-size:${V ? 112 : 190}px">Renversait tout ?</div>`);
+  el.upd = t => { q(el, '.a').style.opacity = P(t, t0, t0 + .3); const b = q(el, '.b'); b.style.opacity = P(t, tR - .05, tR + .1);
+    const r = 180 * eio(P(t, wt('l03', 'tout') + .25, FLIP + .2)); b.style.transform = `translateX(-50%) rotate(${r}deg) scale(${1 + .1 * P(t, tR, FLIP)})`; b.style.filter = `blur(${8 * P(t, FLIP - .1, FLIP + .4)}px)`; }; }
+// --- 2. révélation : le GTA des chrétiens
+{ const t0 = wt('l05', 'Le') - .08, t1 = REVEAL + 6.25;
+  const el = scene(t0, t1, `<div class="t mont cx a" style="top:${CY + (V ? 300 : 250)}px;font-size:${V ? 44 : 46}px;color:var(--gold2)">Le GTA des chrétiens</div><div class="line cx l" style="top:${CY + (V ? 368 : 318)}px;width:0"></div>`);
+  el.upd = t => { const a = q(el, '.a'); a.style.opacity = P(t, t0, t0 + .4) * (1 - P(t, t1 - .3, t1)); a.style.letterSpacing = (.6 - .3 * eo(P(t, t0, t0 + 1.4))) + 'em'; a.style.filter = `blur(${(1 - eo(P(t, t0, t0 + .6))) * 10}px)`;
+    q(el, '.l').style.width = 700 * eo(P(t, t0 + .3, t0 + 1.3)) + 'px'; q(el, '.l').style.opacity = 1 - P(t, t1 - .3, t1); };
+  ev(t0, 'shimmer', .8); }
+// --- texte générique : gros mot qui claque
+function big(t0, t1, html, o = {}) {
+  const el = scene(t0, t1, `<div class="t anton cx m ${o.cls || ''}" style="top:${o.top ?? (CY - (V ? 110 : 100))}px;font-size:${o.size || (V ? 150 : 180)}px">${html}</div>`);
+  el.upd = t => { const d = q(el, '.m'), s = slam(d, t, t0, o.from || 1.5); d.style.transform = `translateX(-50%) scale(${s * (1 + .04 * P(t, t0, t1))})`; d.style.opacity *= 1 - P(t, t1 - .12, t1);
+    d.style.letterSpacing = (.01 + .05 * P(t, t0, t1)) + 'em'; d.style.textShadow = o.glow ? '0 0 40px rgba(246,196,69,.55), 0 8px 30px rgba(0,0,0,.8)' : '0 8px 30px rgba(0,0,0,.85)'; if (o.upd) o.upd(el, t); };
+  if (o.sfx !== false) ev(t0, o.sfx || 'impact', o.g || .8); return el;
+}
+big(wt('l06', 'liberte') - .1, tUne - .02, 'La même liberté', { size: V ? 120 : 150, top: V ? 1350 : 700 });
+big(tUne + .1, Le('l06') - .2, 'Une vraie ville<br>africaine', { size: V ? 120 : 130, top: V ? 1300 : 150, cls: 'gold', glow: 1 });
+{ const el = scene(tUne + .3, Le('l06') - .2, `<div class="t mont" style="left:${V ? 60 : 120}px;top:${V ? 1700 : 830}px;font-size:20px;color:#fff">Lomé · Togo · photo réelle</div>`); el.upd = t => el.style.opacity = P(t, tUne + .3, tUne + .6); }
+// crimes → bonnes actions
+{ const t0 = wt('l07', 'au') - .1, t1 = tTu1;
+  const el = scene(Lt('l07') - .1, t1 + .02, `<div class="t mont cx a" style="top:${CY - (V ? 230 : 190)}px;font-size:${V ? 34 : 32}px">Au lieu de commettre des</div>
+    <div class="t anton cx c" style="top:${CY - (V ? 150 : 130)}px;font-size:${V ? 240 : 280}px;color:#ff2b35">Crimes<div class="strike" style="width:0;background:var(--gold);box-shadow:0 0 30px var(--gold)"></div></div>`);
+  el.upd = t => { q(el, '.a').style.opacity = P(t, t0, t0 + .3); const c = q(el, '.c'), s = slam(c, t, tCrimes, 1.9); c.style.transform = `translateX(-50%) scale(${s}) rotate(${-3 * (1 - spring(t - tCrimes, 14, .6))}deg)`;
+    q(el, '.strike').style.width = 108 * eo(P(t, t1 - .25, t1)) + '%'; }; ev(tCrimes, 'stamp', 1); ev(t1 - .25, 'slash', .9); }
+big(tTu1 + .02, Lt('l09') - .12, '<span class="mont" style="font-size:.22em;letter-spacing:.3em;display:block;margin-bottom:.15em">tu fais des</span>Bonnes actions', { cls: 'gold', glow: 1, size: V ? 128 : 200, sfx: 'shimmer', g: .9 });
+// au lieu de X → tu Y
+beats.forEach(([l, x, y, src, X, Y], i) => { const a = Lt(l) - .1, tx = wt(l, x) - .06, tu = wt(l, 'tu') - .08, b = i < 2 ? Lt(beats[i + 1][0]) - .1 : Lt('l12') - .1;
+  const el = scene(a, b, `<div class="t mont cx a" style="top:${CY - (V ? 260 : 210)}px;font-size:${V ? 32 : 30}px">Au lieu de</div>
+    <div class="t anton cx x" style="top:${CY - (V ? 190 : 160)}px;font-size:${V ? 170 : 200}px;color:#ff2b35">${X}<div class="strike" style="width:0"></div></div>
+    <div class="t anton gold cx y" style="top:${CY - (V ? 110 : 90)}px;font-size:${V ? 170 : 210}px;text-shadow:0 0 40px rgba(246,196,69,.6),0 8px 30px #000">${Y}</div>
+    <div class="slash" style="top:${CY}px;opacity:0"></div>`);
+  el.upd = t => { q(el, '.a').style.opacity = P(t, a + .05, a + .3) * (1 - P(t, tu - .1, tu));
+    const xd = q(el, '.x'), s = slam(xd, t, tx, 1.6); xd.style.transform = `translateX(-50%) scale(${s}) translateY(${-eo(P(t, tu, tu + .35)) * 140}px)`; xd.style.opacity *= 1 - P(t, tu + .05, tu + .35);
+    q(el, '.x .strike').style.width = 108 * eo(P(t, tu - .18, tu)) + '%';
+    const yd = q(el, '.y'), s2 = slam(yd, t, tu + .04, 1.7); yd.style.transform = `translateX(-50%) scale(${s2})`; yd.style.opacity *= 1 - P(t, b - .12, b);
+    const sl = q(el, '.slash'); sl.style.opacity = Math.sin(Math.PI * P(t, tu - .12, tu + .25)); sl.style.transform = `rotate(-14deg) translateX(${lerp(-60, 60, P(t, tu - .12, tu + .25))}%)`; };
+  ev(tx, 'stamp', .7); ev(tu - .12, 'slash', .9); ev(tu + .04, 'shimmer', .7); });
+// grandir : statistiques du jeu
+{ const t0 = Lt('l12') - .1, tg = wt('l12', 'grandir') - .05, ts = wt('l12', 'Seigneur') - .05, t1 = DROP;
+  const pops = [['+ FOI', tg], ['+ AMOUR', tg + .35], ['+ SAGESSE', tg + .7]];
+  const el = scene(t0, t1, pops.map((p, i) => `<div class="pop p${i}" style="left:${V ? 120 + i * 260 : 330 + i * 470}px;top:${V ? 1250 : 640}px">${p[0]}</div>`).join('') +
+    `<div class="t mont cx s" style="top:${V ? 1500 : 820}px;font-size:${V ? 30 : 28}px;color:#fff">Grandir dans le Seigneur</div>`);
+  el.upd = t => { pops.forEach((p, i) => { const d = q(el, '.p' + i), k = P(t, p[1], p[1] + 1.6); d.style.opacity = Math.min(P(t, p[1], p[1] + .12), 1 - P(t, t1 - .3, t1)); d.style.transform = `translateY(${-90 * eo(k)}px) scale(${slam(d, t, p[1], 1.6)})`; d.style.opacity = Math.min(P(t, p[1], p[1] + .12), 1 - P(t, t1 - .3, t1)); });
+    q(el, '.s').style.opacity = P(t, ts - .2, ts + .2); q(el, '.s').style.letterSpacing = (.25 + .1 * P(t, ts, t1)) + 'em'; };
+  pops.forEach(p => ev(p[1], 'coin', .7)); ev(ts, 'shimmer', .8); }
+// grades (drop)
+{ const t0 = DROP, t1 = Lt('l14') - .1, tA = wt('l13', 'premier'), tB = wt('l13', 'maturite') + .4;
+  const G8 = ['Chercheur', 'Nouveau-né en Christ', 'Disciple', 'Serviteur', 'Témoin', 'Soldat de Christ', 'Faiseur de disciples', 'Ambassadeur de Christ'], RN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+  let h = `<div class="lay" style="background:radial-gradient(ellipse at 50% 55%,#3a2608 0,#0d0904 55%,#020202 100%)"></div>
+    <div class="t mont cx" style="top:${V ? 330 : 190}px;font-size:${V ? 30 : 26}px;color:var(--gold)">La Marche chrétienne</div>
+    <div class="t anton cx ti" style="top:${V ? 380 : 236}px;font-size:${V ? 66 : 100}px">Du premier pas à la maturité</div>
+    <div class="line" style="left:${V ? -9999 : 180}px;top:${V ? 0 : 548}px;width:${W - 360}px;opacity:.3"></div><div class="line fill" style="left:180px;top:548px;width:0"></div>`;
+  G8.forEach((g, i) => { const x = V ? (i % 2 ? 620 : 310) : 165 + i * 205, y = V ? 640 + Math.floor(i / 2) * 290 : 500; h += `<div class="medal m${i}" style="left:${x}px;top:${y}px"><div class="d">${RN[i]}</div><div class="l">${g}</div></div>`; });
+  const el = scene(t0, t1, h);
+  el.upd = t => { el.style.opacity = 1 - P(t, t1 - .15, t1); q(el, '.ti').style.transform = `translateX(-50%) scale(${slam(q(el, '.ti'), t, t0 + .05, 1.3)})`;
+    if (!V) q(el, '.fill').style.width = (W - 360) * eio(P(t, tA, tB)) + 'px';
+    G8.forEach((g, i) => { const ti = lerp(tA, tB, i / 7), on = P(t, ti - .05, ti + .2), m = q(el, '.m' + i), d = m.querySelector('.d');
+      m.style.opacity = .25 + .75 * on; m.style.transform = `perspective(600px) rotateY(${(1 - eo(P(t, ti - .1, ti + .45))) * 180}deg) translateY(${(1 - eo(P(t, t0 + i * .04, t0 + .5 + i * .04))) * 60}px)`;
+      d.style.filter = on > .5 ? `drop-shadow(0 0 ${i === 7 ? 40 : 18}px rgba(246,196,69,.9))` : 'grayscale(1) brightness(.5)'; }); };
+  G8.forEach((g, i) => ev(lerp(tA, tB, i / 7), 'tick', .7)); }
+// zémidjans, villes
+big(wt('l14', 'Monte') - .06, wt('l14', 'zemidjan') - .12, 'Monte sur ton', { size: V ? 110 : 120, top: V ? 1350 : 720, sfx: false });
+big(wt('l14', 'zemidjan') - .1, tTrav, 'Zémidjan', { size: V ? 190 : 230, top: V ? 1300 : 640, cls: 'gold', glow: 1 });
+big(tTrav + .02, cityT[0], 'Traverse', { size: V ? 160 : 200, top: V ? 1300 : 640 });
+CITIES.forEach((c, i) => { const t0 = cityT[i], t1 = i < 6 ? cityT[i + 1] : Lt('l15') - .1;
+  const el = scene(t0, t1, `<div class="t" style="left:${V ? 70 : 140}px;top:${V ? 1300 : 600}px"><div class="mont" style="font-size:${V ? 26 : 24}px;color:var(--gold)">${String(i + 1).padStart(2, '0')} / 07 · ${c[1]}</div>
+    <div class="anton n" style="font-size:${V ? 200 : 230}px;text-shadow:0 10px 40px rgba(0,0,0,.85)">${c[0]}</div></div>`);
+  el.upd = t => { const n = q(el, '.n'); n.style.transform = `translateX(${(1 - eo(P(t, t0, t0 + .25))) * -80}px) skewX(${-12 * (1 - eo(P(t, t0, t0 + .3)))}deg)`; n.style.opacity = P(t, t0, t0 + .08); };
+  ev(t0, 'hit', .55); });
+// Prie / Apprends / Aide / Grandis
+PAAG.forEach((p, i) => big(paT[i], i < 3 ? paT[i + 1] : VERSE - .1, p[0], { size: V ? 220 : 260, top: V ? 1250 : 560, cls: i === 3 ? 'gold' : '', glow: i === 3, from: 1.8 }));
+// verset Matthieu 5:14 (Louis Segond 1910)
+{ const t0 = VERSE + .2, t1 = Lt('l16') - .2;
+  const v1 = 'Vous êtes la lumière du monde.', v2 = 'Une ville située sur une montagne ne peut être cachée.';
+  const words = (s) => s.split(' ').map(w => `<span style="display:inline-block;overflow:hidden;vertical-align:bottom;padding-top:.15em;margin-top:-.15em"><span style="display:inline-block">${w}</span></span>`).join(' ');
+  const el = scene(t0, t1, `<div class="t cin cx l1" style="top:${V ? 760 : 380}px;font-size:${V ? 64 : 76}px;white-space:${V ? 'normal' : 'nowrap'};width:${V ? 960 : 'auto'};text-align:center;text-shadow:0 4px 30px #000">${words(v1)}</div>
+    <div class="t cx l2" style="top:${V ? 1010 : 500}px;font-family:Mont;font-weight:500;font-size:${V ? 40 : 38}px;color:rgba(255,255,255,.9);white-space:${V ? 'normal' : 'nowrap'};width:${V ? 900 : 'auto'};text-align:center;line-height:1.35">${words(v2)}</div>
+    <div class="t mont gold cx l3" style="top:${V ? 1230 : 620}px;font-size:24px">Matthieu 5:14</div>`);
+  const rv = (box, t, a, st) => qa(box, 'span>span').forEach((s, i) => { s.style.transform = `translateY(${(1 - eo(P(t, a + i * st, a + i * st + .5))) * 110}%)`; });
+  el.upd = t => { rv(q(el, '.l1'), t, t0 + .2, .13); rv(q(el, '.l2'), t, t0 + 1.7, .09); q(el, '.l3').style.opacity = P(t, t0 + 3, t0 + 3.5); el.style.opacity = 1 - P(t, t1 - .35, t1); }; }
+// sois la lumière dans la ville
+{ const t0 = wt('l16', 'Sois') - .08, t1 = LOGO;
+  const el = scene(t0, t1, `<div class="t cin cx s" style="top:${V ? 1300 : 760}px;font-size:${V ? 48 : 72}px;text-shadow:0 0 30px rgba(255,220,150,.5),0 6px 30px #000">Sois la lumière dans la ville</div>`);
+  el.upd = t => { const s = q(el, '.s'); s.style.opacity = P(t, t0, t0 + .4); s.style.letterSpacing = (.02 + .06 * P(t, t0, t1)) + 'em'; s.style.filter = `blur(${(1 - eo(P(t, t0, t0 + .5))) * 8}px)`; }; }
+// logo final + fin
+{ const tL = wt('l17', 'Le') - .08, tE = Lt('l18') - .2;
+  const usedP = new Set(C.filter(c => c.src[0] === 'p').map(c => c.src.slice(2))); const credits = 'Photos réelles : Wikimedia Commons — ' + [...new Set(Object.entries(CRED).filter(([k]) => usedP.has(k)).map(([k, c]) => c).map(c => c.artist.replace(/\s+/g, ' ').split(' This')[0].trim()))].join(', ') + ' (CC BY-SA / CC BY) · Séquences de jeu en développement';
+  const el = scene(LOGO, DUR, `<div class="t mont cx a" style="top:${V ? 1240 : 760}px;font-size:${V ? 44 : 42}px;color:var(--gold2)">Le GTA des chrétiens</div>
+    <div class="t anton cx e1" style="top:${V ? 1360 : 600}px;font-size:${V ? 70 : 62}px">Gratuit · <span class="gold">Maintenant</span></div>
+    <div class="t mont cx e2" style="top:${V ? 1460 : 685}px;font-size:${V ? 24 : 22}px;color:rgba(255,255,255,.85)">Téléphone · Ordinateur · Français / English</div>
+    <div class="t cx e3" style="top:${V ? 1540 : 735}px;font-family:Mont;font-weight:700;font-size:${V ? 32 : 28}px;color:#111;background:var(--gold);padding:10px 30px;border-radius:999px">gavoekoffi2.github.io/GTA-Chr-tien</div>
+    <div class="t cx cr" style="top:${V ? 1700 : 860}px;width:${W - 160}px;white-space:normal;text-align:center;font-family:Mont;font-weight:500;font-size:${V ? 13 : 11}px;line-height:1.4;color:rgba(255,255,255,.5)">${credits}</div>`);
+  el.upd = t => { const a = q(el, '.a'); a.style.opacity = P(t, tL, tL + .4) * (1 - P(t, tE - .2, tE + .2) * .0); a.style.letterSpacing = (.55 - .25 * eo(P(t, tL, tL + 1.4))) + 'em';
+    const up = eio(P(t, tE, tE + .8)); a.style.transform = `translateX(-50%) translateY(${-up * (V ? 120 : 275)}px) scale(${1 - .25 * up})`;
+    [['.e1', tE + .3], ['.e2', tE + .7], ['.e3', wt('l18', 'telephone') - .3], ['.cr', tE + 1.5]].forEach(([s, a0]) => { const d = q(el, s); d.style.opacity = P(t, a0, a0 + .35); d.style.transform = `translateX(-50%) translateY(${(1 - eo(P(t, a0, a0 + .5))) * 30}px)`; }); };
+  ev(tL, 'shimmer', .8); ev(tE + .3, 'pop', .6); ev(wt('l18', 'telephone') - .3, 'ding', .7); }
+// ---------- effets ----------
+const fx = $('fx').getContext('2d'), vhs = $('vhs').getContext('2d');
+function rnd(i) { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+function bokeh(t, a) { // lumières de ville floues (accroche)
+  for (let i = 0; i < 46; i++) { const sp = 30 + rnd(i) * 90, x = ((rnd(i + 1) * W * 1.4 - t * sp) % (W * 1.4) + W * 1.4) % (W * 1.4) - W * .2, y = H * (.25 + rnd(i + 2) * .6), r = 20 + rnd(i + 3) * 90;
+    const c = [[255, 170, 60], [255, 60, 60], [255, 240, 220], [80, 140, 255]][i % 4], g = fx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${c},${.35 * a})`); g.addColorStop(.6, `rgba(${c},${.18 * a})`); g.addColorStop(1, `rgba(${c},0)`); fx.fillStyle = g; fx.beginPath(); fx.arc(x, y, r, 0, 7); fx.fill(); } }
+function dust(t, a, col = '255,215,140') { for (let i = 0; i < 90; i++) { const x = (rnd(i) * W + Math.sin(t * .4 + i) * 30) % W, y = ((rnd(i + 9) * H - t * (12 + rnd(i + 4) * 30)) % H + H) % H, r = .8 + rnd(i + 5) * 2.4;
+    fx.fillStyle = `rgba(${col},${a * (.3 + .7 * rnd(i + 6)) * (.6 + .4 * Math.sin(t * 2 + i))})`; fx.beginPath(); fx.arc(x, y, r, 0, 7); fx.fill(); } }
+function flare(x, y, a) { const g = fx.createLinearGradient(0, y, W, y); g.addColorStop(0, 'rgba(255,190,90,0)'); g.addColorStop(clamp(x / W, .001, .999), `rgba(255,230,180,${.7 * a})`); g.addColorStop(1, 'rgba(255,190,90,0)'); fx.fillStyle = g; fx.fillRect(0, y - 3, W, 6);
+  const r = fx.createRadialGradient(x, y, 0, x, y, 260); r.addColorStop(0, `rgba(255,240,210,${.8 * a})`); r.addColorStop(.3, `rgba(255,170,60,${.3 * a})`); r.addColorStop(1, 'rgba(255,120,0,0)'); fx.fillStyle = r; fx.fillRect(x - 260, y - 260, 520, 520); }
+const crack = $('crack'); { let h = ''; for (let i = 0; i < 16; i++) { let x = 960, y = 540, d = `M${x} ${y}`; const a0 = i / 16 * 6.283 + rnd(i) * .3; for (let k = 0; k < 7; k++) { const a = a0 + (rnd(i * 9 + k) - .5) * .6; x += Math.cos(a) * (60 + rnd(i + k) * 120); y += Math.sin(a) * (60 + rnd(i * 3 + k) * 120); d += ` L${x.toFixed(0)} ${y.toFixed(0)}`; } h += `<path d="${d}" pathLength="1" stroke="#fff" stroke-width="${2 + rnd(i) * 3}" fill="none" opacity=".85"/>`; }
+  for (let r = 1; r < 4; r++) { let d = ''; for (let i = 0; i <= 16; i++) { const a = i / 16 * 6.283, rr = r * 90 + rnd(i * r) * 40; d += (i ? ' L' : 'M') + (960 + Math.cos(a) * rr).toFixed(0) + ' ' + (540 + Math.sin(a) * rr).toFixed(0); } h += `<path d="${d}" pathLength="1" stroke="#fff" stroke-width="1.5" fill="none" opacity=".6"/>`; } crack.innerHTML = h; }
+// ---------- logo 3D ----------
+const logo = await createLogo($('logo'), W, H);
+const photoGL = createPhotoGL($('photo'));
+// ---------- moteur ----------
+function frameOf(c, t) { const n = FR[c.src.slice(2)] || 1; const f = Math.max(0, Math.min(n - 1, Math.floor((c.off + (t - c.t0) * c.speed) * 30))); return `raw/${c.src.slice(2)}/${String(f).padStart(4, '0')}.jpg`; }
+async function seekAsync(t) {
+  const st = $('stage'); let fl = 0;
+  // plan photo
+  const c = C.find(c => t >= c.t0 && t < c.t1); let pend = [];
+  if (c) {
+    const src = c.img || frameOf(c, t), im = loadImg(src), dp = c.dep ? loadImg(c.dep) : null;
+    pend.push(im.decode().catch(() => {})); if (dp) pend.push(dp.decode().catch(() => {})); await Promise.all(pend);
+    const u = P(t, c.t0, c.t1), k = eio(u) * .5 + u * .5, g = c.g || {};
+    let blur = c.blurBG || 0, bdir = [1, 0], ca = .4;
+    if (c.whip) { const a = 1 - P(t, c.t0, c.t0 + .22); blur = Math.max(blur, .09 * a * a); ca += 3 * a; bdir = c.whip === 2 ? [.6, .8] : [1, 0]; }
+    let fade = c.fin ? P(t, c.t0, c.t0 + c.fin) : 1; if (c.fout) fade *= 1 - P(t, c.t1 - c.fout, c.t1);
+    const shake = c.whip ? Math.max(0, 1 - (t - c.t0) / .3) * .006 : 0;
+    photoGL.draw(Object.assign({}, g, { img: im, dep: dp, zoom: lerp(c.z[0], c.z[1], k), cam: [lerp(c.cam[0], c.cam[2], k), lerp(c.cam[1], c.cam[3], k)], focus: c.focus, fx: c.fx, fy: c.fy,
+      pan: [Math.sin(t * 47) * shake, Math.cos(t * 39) * shake], blur, bdir, ca, fade, gt: Math.floor(t * 24) }));
+    $('chip').style.display = c.game ? 'block' : 'none';
+  } else { photoGL.draw(null); $('chip').style.display = 'none'; }
+  $('chip').style.left = (V ? 40 : 60) + 'px'; $('chip').style.top = (V ? 60 : BAR + 24) + 'px';
+  // logo 3D
+  const lc = $('logo'); const inLogo = (t >= REVEAL && t < REVEAL + 6.25) || t >= LOGO;
+  lc.style.display = inLogo ? 'block' : 'none';
+  if (inLogo) { const lt = t >= LOGO ? t - LOGO : t - REVEAL, up = t >= LOGO ? eio(P(t, Lt('l18') - .2, Lt('l18') + .6)) : 0; logo.render(lt, up);
+    lc.style.opacity = t < LOGO ? 1 - P(t, REVEAL + 5.9, REVEAL + 6.25) : 1; }
+  $('bg').style.opacity = (t >= REVEAL && t < REVEAL + 6.25) || (t >= DROP && t < Lt('l14') - .1) ? 1 : (t < REVEAL ? 1 : 0);
+  // fx canvas
+  fx.clearRect(0, 0, W, H);
+  if (t < REVEAL) bokeh(t, (t < Lt('l03') - .1 ? 1 : .5) * P(t, 0, .6));
+  if ((t >= REVEAL && t < REVEAL + 6.25) || t >= VERSE) dust(t, .9);
+  if (t >= tTu1 && t < Lt('l09')) dust(t, .7);
+  if (t >= LOGO - .3 && t < LOGO + 1.6) flare(lerp(-200, W + 200, P(t, LOGO - .3, LOGO + 1.6)), H * .42, Math.sin(Math.PI * P(t, LOGO - .3, LOGO + 1.6)));
+  if (t >= REVEAL - .1 && t < REVEAL + 1.4) flare(lerp(W + 200, -200, P(t, REVEAL - .1, REVEAL + 1.4)), H * .4, Math.sin(Math.PI * P(t, REVEAL - .1, REVEAL + 1.4)));
+  // stroboscopes : feux de détresse (voler) et police (fuir)
+  const sb = $('strobe'); let so = 0, sbg = '';
+  const tv = wt('l02', 'Voler') - .06, tf = wt('l02', 'Fuir') - .06, tc = wt('l02', 'chaos') - .05;
+  if (t >= tv && t < tf) { const ph = Math.floor((t - tv) * 4) % 2; so = ph ? .0 : .32; sbg = 'radial-gradient(ellipse at 15% 85%,rgba(255,150,0,.9),transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(255,150,0,.9),transparent 50%)'; }
+  if (t >= tf && t < tc) { const ph = Math.floor((t - tf) * 7) % 2; so = .45; sbg = ph ? 'radial-gradient(ellipse at 0% 50%,rgba(255,20,40,.95),transparent 60%)' : 'radial-gradient(ellipse at 100% 50%,rgba(30,90,255,.95),transparent 60%)'; }
+  if (t >= tc && t < Lt('l03') - .1) { so = .35 * (1 - P(t, tc, tc + 1)); sbg = 'radial-gradient(ellipse at 50% 50%,rgba(255,0,0,.6),rgba(80,0,0,.9))'; }
+  sb.style.opacity = so; sb.style.background = sbg;
+  crack.style.display = t >= tc && t < Lt('l03') - .1 ? 'block' : 'none'; if (crack.style.display === 'block') { const k = eo(P(t, tc, tc + .25)); crack.querySelectorAll('path').forEach(p => { p.style.strokeDasharray = '1 1'; p.style.strokeDashoffset = 1 - k; }); crack.style.opacity = 1 - P(t, Lt('l03') - .5, Lt('l03') - .1); }
+  // VHS / retour arrière puis retournement de l'image
+  vhs.clearRect(0, 0, W, H); const vk = P(t, wt('l03', 'tout'), FLIP) * (t < FLIP + .7 ? 1 : 0);
+  $('vhs').style.opacity = vk; if (vk > 0) { for (let i = 0; i < 9; i++) { const y = ((rnd(i + Math.floor(t * 30)) * H)); vhs.fillStyle = `rgba(255,255,255,${.12 + rnd(i * 7) * .25})`; vhs.fillRect(0, y, W, 2 + rnd(i) * 10); } vhs.fillStyle = 'rgba(255,255,255,.9)'; vhs.font = 'bold 44px Mont'; vhs.fillText('◀◀ REW', V ? 60 : 90, (V ? 120 : BAR + 70)); }
+  const fk = P(t, FLIP, REVEAL - .05); st.style.transform = fk > 0 && fk < 1 ? `rotate(${180 * eio(fk)}deg) scale(${1 - .35 * Math.sin(Math.PI * fk)})` : 'none'; st.style.filter = fk > 0 && fk < 1 ? `blur(${10 * Math.sin(Math.PI * fk)}px)` : 'none';
+  // éclairs
+  for (const [a, k, d] of [[REVEAL, 1, .9], [DROP, 1, .6], [LOGO, 1, .8], [tTu1, .7, .35], [tCrimes, .35, .2], [wt('l01', 'GTA') - .05, .5, .25], [tc, .6, .3], [cityT[0], .4, .2]]) if (t >= a) fl = Math.max(fl, k * (1 - P(t, a, a + d)));
+  for (const p of paT) if (t >= p) fl = Math.max(fl, .45 * (1 - P(t, p, p + .2)));
+  for (const b of beats) { const tu = wt(b[0], 'tu') - .08; if (t >= tu) fl = Math.max(fl, .5 * (1 - P(t, tu, tu + .25))); }
+  fl = Math.max(fl, P(t, REVEAL - .35, REVEAL) * (t < REVEAL ? 1 : 0), .9 * P(t, DROP - .2, DROP) * (t < DROP ? 1 : 0));
+  $('flash').style.opacity = fl;
+  const lk = Math.max(1 - Math.abs(t - DROP - .3) / .9, 1 - Math.abs(t - tTu1 - .2) / .8, 1 - Math.abs(t - LOGO - .3) / 1.1, 0), lx = (t * 41) % 100;
+  $('leak').style.opacity = lk * .85; $('leak').style.background = `radial-gradient(circle at ${lx}% 40%, rgba(255,170,60,.95), rgba(255,80,20,.35) 30%, transparent 60%)`;
+  // scènes
+  for (const s of SC) { const on = t >= s.t0 && t < s.t1; s.el.style.display = on ? 'block' : 'none'; if (on) s.el.upd(t); }
+  await new Promise(r => requestAnimationFrame(r));
+}
+window.seekAsync = seekAsync;
+await document.fonts.ready; await Promise.all(['Anton', 'Cinzel', 'Mont'].map(f => document.fonts.load(`40px ${f}`)));
+await Promise.all(Object.values(IM).map(i => i.decode().catch(() => console.error('image manquante', i.src))));
+await seekAsync(0); window.READY = true;
+</script></body></html>

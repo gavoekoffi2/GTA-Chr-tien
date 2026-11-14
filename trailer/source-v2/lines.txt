@@ -1,0 +1,18 @@
+l01|-6%|-8Hz|Tout le monde connaît GTA.
+l02|+2%|-6Hz|Voler des voitures. Fuir la police. Semer le chaos.
+l03|-8%|-8Hz|Et si on renversait tout ?
+l04|-10%|-10Hz|Voici Zion City.
+l05|-12%|-10Hz|Le GTA des chrétiens.
+l06|-4%|-8Hz|La même liberté. Une vraie ville africaine.
+l07|-4%|-8Hz|Mais ici, au lieu de commettre des crimes,
+l08|-6%|-8Hz|tu fais des bonnes actions.
+l09|+0%|-6Hz|Au lieu de voler, tu donnes.
+l10|+0%|-6Hz|Au lieu de te battre, tu pardonnes.
+l11|+0%|-6Hz|Au lieu de fuir, tu sers.
+l12|-6%|-8Hz|Et chaque bonne action te fait grandir dans le Seigneur.
+l13|-6%|-8Hz|Du premier pas de foi, jusqu'à la maturité.
+l14|+2%|-6Hz|Monte sur ton zémidjan. Traverse Lomé, Cotonou, Accra, Abidjan, Lagos, jusqu'à Paris et Londres.
+l15|-2%|-6Hz|Prie. Apprends. Aide. Grandis.
+l16|-10%|-10Hz|Sois la lumière dans la ville.
+l17|-10%|-10Hz|Zion City. Le GTA des chrétiens.
+l18|+0%|-6Hz|Gratuit. Maintenant. Sur ton téléphone et ton ordinateur.
