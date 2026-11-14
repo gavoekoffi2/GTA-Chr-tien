@@ -1,0 +1,15 @@
+l01|-8%|-8Hz|Lomé. Une ville qui ne dort jamais.
+l02|-6%|-8Hz|Des rues pleines de vie. De bruit. Et de choix.
+l03|-8%|-8Hz|Ici, chacun cherche quelque chose.
+l04|-6%|-8Hz|Certains cherchent l'argent. D'autres cherchent le pouvoir.
+l05|-12%|-10Hz|Mais toi…
+l06|-8%|-8Hz|tu vas chercher la lumière.
+l07|+0%|-6Hz|Monte sur ton zémidjan. Traverse la ville.
+l08|-2%|-6Hz|Aide ceux que personne ne regarde.
+l09|-4%|-6Hz|Prie. Apprends. Grandis.
+l10|-6%|-8Hz|Du premier pas de foi, jusqu'à la maturité.
+l11|+2%|-6Hz|Lomé. Cotonou. Accra. Abidjan. Lagos. Paris. Londres.
+l12|-4%|-8Hz|Sept vraies villes. Une seule mission.
+l13|-10%|-10Hz|Sois la lumière dans la ville.
+l14|-6%|-8Hz|Zion City.
+l15|+0%|-6Hz|Joue maintenant, gratuitement, sur ton téléphone et ton ordinateur.

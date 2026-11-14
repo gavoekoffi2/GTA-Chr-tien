@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Zion City — bande-annonce</title>
+<style>
+@font-face{font-family:Anton;src:url(fonts/Anton-400.woff2)}
+@font-face{font-family:Bebas;src:url(fonts/BebasNeue-400.woff2)}
+@font-face{font-family:Cinzel;src:url(fonts/Cinzel-700.woff2);font-weight:700}
+@font-face{font-family:Mont;src:url(fonts/Montserrat-800.woff2);font-weight:100 900}
+:root{--gold:#F6C445;--gold2:#FFE7A3;--amber:#E89B2D;--ink:#07080B;--u:1px}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);background:#000;overflow:hidden}
+#stage{position:absolute;inset:0;overflow:hidden;background:#000}
+.lay{position:absolute;inset:0}
+#foot img{position:absolute;left:50%;top:50%;width:100%;height:100%;object-fit:cover;transform-origin:50% 50%;will-change:transform}
+#bgblur{position:absolute;inset:-60px;width:calc(100% + 120px);height:calc(100% + 120px);object-fit:cover;filter:blur(38px) brightness(.6) saturate(1.3);display:none}
+.v #bgblur{display:block}
+#foot #bgblur{left:-60px;top:-60px;transform:none}
+.v #fg{position:absolute;left:0;width:100%;top:calc(50% - 304px);height:608px;overflow:hidden}
+.h #fg{position:absolute;inset:0;overflow:hidden}
+#fg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#grain{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:overlay;opacity:.07;image-rendering:pixelated}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.55) 100%)}
+#leak{position:absolute;inset:0;mix-blend-mode:screen;opacity:0}
+#flash{position:absolute;inset:0;background:#fff;opacity:0}
+#black{position:absolute;inset:0;background:#000;opacity:1}
+.bar{position:absolute;left:0;width:100%;height:var(--bar);background:#000;z-index:20}
+#barT{top:0}#barB{bottom:0}
+.sc{position:absolute;inset:0;display:none;z-index:10}
+.t{position:absolute;white-space:nowrap;color:#fff}
+.anton{font-family:Anton;text-transform:uppercase;letter-spacing:.01em;line-height:.92}
+.bebas{font-family:Bebas;letter-spacing:.12em}
+.mont{font-family:Mont;font-weight:800;letter-spacing:.32em;text-transform:uppercase}
+.cin{font-family:Cinzel;font-weight:700}
+.gold{color:var(--gold);text-shadow:0 0 calc(30*var(--u)) rgba(246,196,69,.35),0 calc(6*var(--u)) calc(30*var(--u)) rgba(0,0,0,.7)}
+.sh{text-shadow:0 calc(4*var(--u)) calc(26*var(--u)) rgba(0,0,0,.8)}
+.cx{left:50%;transform:translateX(-50%)}
+.mask{display:inline-block;overflow:hidden;vertical-align:bottom;padding-top:.16em;margin-top:-.16em}
+.mask>span{display:inline-block}
+.rays{position:absolute;left:50%;top:50%;width:calc(2600*var(--u));height:calc(2600*var(--u));margin:calc(-1300*var(--u)) 0 0 calc(-1300*var(--u));
+  background:repeating-conic-gradient(from 0deg,rgba(255,226,150,.0) 0deg 7deg,rgba(255,226,150,.22) 9deg 11deg,rgba(255,226,150,0) 13deg 20deg);
+  -webkit-mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 25%,transparent 62%);mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 25%,transparent 62%)}
+.glow{position:absolute;left:50%;top:50%;border-radius:50%;background:radial-gradient(circle,rgba(255,240,200,.95),rgba(255,200,90,.45) 30%,rgba(255,160,40,0) 70%);mix-blend-mode:screen}
+.tag{position:absolute;display:flex;align-items:center;gap:calc(18*var(--u))}
+.tag i{display:block;width:calc(64*var(--u));height:calc(4*var(--u));background:var(--gold)}
+.grade{position:absolute;text-align:center;width:calc(210*var(--u))}
+.grade .n{font-family:Cinzel;font-weight:700;color:var(--gold);font-size:calc(40*var(--u))}
+.grade .d{position:relative;width:calc(74*var(--u));height:calc(74*var(--u));margin:0 auto calc(16*var(--u));border-radius:50%;border:calc(3*var(--u)) solid rgba(246,196,69,.35);display:flex;align-items:center;justify-content:center;background:rgba(10,10,14,.6)}
+.grade .l{font-family:Mont;font-weight:700;font-size:calc(17*var(--u));letter-spacing:.06em;color:#fff;white-space:normal;line-height:1.25;text-transform:uppercase}
+.tile{position:absolute;overflow:hidden;border:calc(3*var(--u)) solid rgba(246,196,69,.8);box-shadow:0 calc(20*var(--u)) calc(50*var(--u)) rgba(0,0,0,.6)}
+.tile img{width:100%;height:100%;object-fit:cover}
+.tile b{position:absolute;left:calc(14*var(--u));bottom:calc(10*var(--u));font-family:Anton;font-weight:400;font-size:calc(40*var(--u));color:#fff;text-shadow:0 2px 12px #000;text-transform:uppercase}
+.frame{position:absolute;overflow:hidden;border:calc(4*var(--u)) solid #fff;box-shadow:0 calc(30*var(--u)) calc(80*var(--u)) rgba(0,0,0,.7)}
+.frame img{width:100%;height:100%;object-fit:cover}
+.line{position:absolute;height:calc(3*var(--u));background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+</style></head>
+<body><div id="stage">
+  <div id="foot" class="lay"><img id="bgblur"><div id="fg"><img id="fa"><img id="fb"></div></div>
+  <div id="leak" class="lay"></div>
+  <div id="vig" class="lay"></div>
+  <div id="scenes" class="lay"></div>
+  <canvas id="grain" width="320" height="180"></canvas>
+  <div id="black" class="lay"></div>
+  <div id="flash" class="lay"></div>
+  <div id="barT" class="bar"></div><div id="barB" class="bar"></div>
+</div>
+<script>
+const Q = new URLSearchParams(location.search), V = Q.get('fmt') === 'v';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080, U = V ? 1 : 1;
+document.documentElement.style.setProperty('--W', W + 'px'); document.documentElement.style.setProperty('--H', H + 'px');
+document.documentElement.style.setProperty('--u', (V ? 1.0 : 1.0) + 'px');
+document.documentElement.style.setProperty('--bar', (V ? 0 : 132) + 'px');
+document.body.className = V ? 'v' : 'h';
+const TL = window.TIMELINE, FR = window.FRAMES; // injectés par build.py
+const DUR = TL.END; window.DURATION = DUR; const EVENTS = []; window.EVENTS = EVENTS;
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), P = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => 1 - (1 - clamp(x)) ** 3, eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2; };
+const spring = (tau, w = 15, z = .5) => tau <= 0 ? 0 : 1 - Math.exp(-z * w * tau) * Math.cos(w * Math.sqrt(1 - z * z) * tau);
+const lerp = (a, b, x) => a + (b - a) * x;
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z']/g, '');
+function wt(line, word, n = 1) { const ws = TL.lines[line].words; let k = 0; for (const w of ws) if (norm(w[2]).startsWith(norm(word)) && ++k === n) return w[0]; console.error('mot introuvable', line, word); return NaN; }
+const Lt = k => TL.lines[k].t, Le = k => TL.lines[k].t + TL.lines[k].d;
+const ev = (t, name, g = 1) => EVENTS.push({ t: +t.toFixed(3), name, g });
+// ---------- découpage (EDL) ----------
+const DROP = TL.DROP, VERSE = TL.VERSE, LOGO = TL.LOGO;
+const C = [];  // {t0,t1,clip|img,off,speed,kb:[s0,s1,x0,x1,y0,y1],grade,fin,fout,shake}
+const cut = (t0, t1, src, o = {}) => C.push(Object.assign({ t0, t1, off: 0, speed: 1, kb: [1.04, 1.12, 0, 0, 0, 0], grade: 'warm', fin: 0, fout: 0 }, typeof src === 'string' && src.startsWith('@') ? { img: src.slice(1) } : { clip: src }, o));
+const tDes = wt('l02', 'Des') - .12, tBruit = wt('l02', 'bruit') - .25, tEt = wt('l02', 'Et') - .12;
+cut(0.9, tDes, 'ocean', { fin: 1.6, kb: [1.0, 1.08, 0, -20, 0, 6], speed: 0.8 });
+cut(tDes, tBruit, 'aerial', { kb: [1.02, 1.1, 0, 0, 0, 0] });
+cut(tBruit, tEt, 'street', { kb: [1.06, 1.12, 10, -10, 0, 0] });
+cut(tEt, Lt('l03') - .1, 'zem', { kb: [1.05, 1.1, 0, 0, 0, 0] });
+cut(Lt('l03') - .1, Lt('l04') - .1, 'night', { kb: [1.15, 1.25, 0, 0, -30, -50], speed: .8, grade: 'night' });
+const tDautres = wt('l04', "D'autres") - .15;
+cut(Lt('l04') - .1, tDautres, 'street', { off: 1.0, speed: .6, kb: [1.15, 1.25, 0, 0, 0, 0], grade: 'cold' });
+cut(tDautres, Le('l04') + .25, 'aerial', { off: 2.0, speed: .5, kb: [1.1, 1.3, 0, 0, 0, 0], grade: 'red' });
+// trou noir + battement de cœur
+cut(Lt('l05') - .1, DROP, 'hero', { fin: 1.2, kb: [1.0, 1.18, 0, 0, 0, -10], speed: 1.05, grade: 'hero' });
+// drop : rafale
+const R1 = DROP + .05;
+cut(R1, R1 + .32, 'aerial', { off: 2.2, speed: 2.5, kb: [1.15, 1.25, 0, 0, 0, 0], shake: 1 });
+cut(R1 + .32, R1 + .6, 'taxi', { off: 1.5, speed: 2, kb: [1.1, 1.2, 0, 0, 0, 0], shake: 1 });
+cut(R1 + .6, Lt('l07') - .1, 'ocean', { off: 2.5, speed: 2, kb: [1.1, 1.15, 0, 0, 0, 0] });
+const tTrav = wt('l07', 'Traverse') - .15;
+cut(Lt('l07') - .1, tTrav, 'zem', { off: 0.3, kb: [1.02, 1.1, 0, 0, 0, 0], speed: 1.0 });
+cut(tTrav, Lt('l08') - .12, 'taxi', { kb: [1.0, 1.08, 0, 0, 0, 0] });
+const g0 = Lt('l08') - .12, g1 = Lt('l09') - .1, gs = (g1 - g0) / 4;
+['@a_thief', '@a_end', '@a_amb', '@e_ride'].forEach((s, i) => cut(g0 + i * gs, g0 + (i + 1) * gs, s, { kb: [1.0, 1.04, (i % 2 ? 14 : -14), 0, 0, 0], grade: 'game', shake: 1, frame: 1 }));
+const tApp = wt('l09', 'Apprends') - .08, tGr = wt('l09', 'Grandis') - .08;
+cut(g1, tApp, '@a_choir', { kb: [1.0, 1.05, 0, 0, 0, 0], grade: 'game', shake: 1, frame: 1 });
+cut(tApp, tGr, '@a_quiz', { kb: [1.0, 1.05, 0, 0, 0, 0], grade: 'game', shake: 1, frame: 1 });
+cut(tGr, Lt('l10') - .15, 'church', { kb: [1.0, 1.1, 0, 0, 10, -10], shake: 1 });
+// grades (motion graphics plein écran) : Lt(l10)-.15 → villes
+const CITIES = [['lome', 'Lomé', 'Togo'], ['cotonou', 'Cotonou', 'Bénin'], ['accra', 'Accra', 'Ghana'], ['abidjan', 'Abidjan', "Côte d'Ivoire"], ['lagos', 'Lagos', 'Nigeria'], ['paris', 'Paris', 'France'], ['london', 'Londres', 'Royaume-Uni']];
+const cityT = CITIES.map((c, i) => wt('l11', c[1].replace('é', 'e')) - .22);
+const CITY0 = cityT[0];
+CITIES.forEach((c, i) => cut(cityT[i], i < 6 ? cityT[i + 1] : Le('l11') + .2, '@city_' + c[0], { kb: [1.04, 1.16, (i % 2 ? -30 : 30), 0, 0, 0], grade: 'warm', shake: 1 }));
+// 7 villes (grille) : Le(l11)+.2 → VERSE
+cut(VERSE - .1, Lt('l13') - .15, 'ocean', { off: 0.2, speed: .45, kb: [1.08, 1.0, 0, 0, 0, 0], grade: 'verse', fin: .8 });
+cut(Lt('l13') - .15, LOGO, 'church', { off: .3, speed: .7, kb: [1.0, 1.12, 0, 0, 0, -6], grade: 'warm' });
+cut(LOGO, DUR, 'aerial', { off: 0, speed: .55, kb: [1.08, 1.2, 0, 0, 0, 0], grade: 'logo' });
+for (const c of C) if (c.t0 > 1.5 && !(c.t0 >= LOGO - .01) && Math.abs(c.t0 - VERSE + .1) > .01) ev(c.t0 - .18, 'whoosh', .5);
+const GRADES = { warm: 'contrast(1.12) saturate(1.18) sepia(.12) brightness(1.02)', night: 'contrast(1.1) saturate(1.4) brightness(1.7) hue-rotate(-6deg)', cold: 'grayscale(.85) contrast(1.25) brightness(.7)', red: 'grayscale(.6) sepia(.9) hue-rotate(-38deg) saturate(2.2) contrast(1.3) brightness(.62)', hero: 'contrast(1.15) saturate(1.1) sepia(.2)', game: 'contrast(1.08) saturate(1.12)', verse: 'contrast(1.05) saturate(.9) sepia(.35) brightness(.55)', logo: 'blur(3px) brightness(.38) saturate(1.2) sepia(.4)' };
+// ---------- scènes de texte ----------
+const SC = [], S = $('scenes');
+function scene(t0, t1, html) { const el = document.createElement('div'); el.className = 'sc'; el.innerHTML = html; S.appendChild(el); SC.push({ t0, t1, el }); el.upd = () => {}; return el; }
+const q = (el, s) => el.querySelector(s);
+const px = n => n * (V ? 1 : 1) + 'px';
+const fade = (t, a, b, f = .25) => Math.min(P(t, a, a + f), 1 - P(t, b - f, b));
+function wordsHTML(txt, cls = '') { return txt.split(' ').map(w => `<span class="mask"><span class="${cls}">${w}</span></span>`).join(' '); }
+function revealWords(el, t, t0, step = .07) { el.querySelectorAll('.mask>span').forEach((s, i) => { const k = eo(P(t, t0 + i * step, t0 + i * step + .45)); s.style.transform = `translateY(${(1 - k) * 110}%)`; }); }
+// 1. LOMÉ, TOGO
+{ const t0 = wt('l01', 'Lome') - .1, t1 = tDes - .05;
+  const el = scene(t0, t1, `<div class="t" style="left:${V ? 80 : 150}px;top:${V ? 1340 : 760}px">
+    <div class="anton gold" style="font-size:${V ? 150 : 130}px"><span class="mask"><span>LOMÉ</span></span></div>
+    <div class="tag" style="position:relative;margin-top:14px"><i></i><span class="mont" style="font-size:${V ? 30 : 24}px;color:#fff">Togo · Afrique de l'Ouest</span></div></div>`);
+  el.upd = t => { el.style.opacity = fade(t, t0, t1, .4); q(el, '.mask>span').style.transform = `translateY(${(1 - eo(P(t, t0, t0 + .7))) * 110}%)`; q(el, '.tag').style.opacity = P(t, t0 + .5, t0 + 1); q(el, '.tag i').style.width = 64 * eo(P(t, t0 + .5, t0 + 1.1)) + 'px'; };
+  ev(t0, 'hit', .4); }
+// 2. Mots forts sur l'intro
+function bigWord(t0, t1, txt, o = {}) {
+  const el = scene(t0, t1, `<div class="t anton ${o.cls || 'gold'} cx" style="top:${o.top ?? (V ? 1380 : 400)}px;font-size:${o.size || (V ? 170 : 230)}px">${txt}</div>`);
+  el.upd = t => { const k = spring(t - t0, 16, .55), d = q(el, '.t'); d.style.transform = `translateX(-50%) scale(${1.6 - .6 * k})`; d.style.opacity = Math.min(clamp((t - t0) / .08), 1 - P(t, t1 - .2, t1)); d.style.letterSpacing = (.01 + .08 * P(t, t0, t1)) + 'em'; if (o.glitch) d.style.textShadow = `${Math.sin(t * 90) * 6}px 0 rgba(255,0,40,.8), ${-Math.sin(t * 70) * 6}px 0 rgba(0,200,255,.6), 0 8px 30px rgba(0,0,0,.8)`; };
+  ev(t0, o.sfx || 'impact', .8); return el;
+}
+bigWord(wt('l04', "l'argent") - .05, tDautres - .02, "L'ARGENT", { cls: 'gold' });
+bigWord(wt('l04', 'pouvoir') - .05, Le('l04') + .25, 'LE POUVOIR', { cls: 'sh', glitch: true });
+{ const t0 = wt('l03', 'Ici') - .05, t1 = Le('l03');
+  const el = scene(t0, t1, `<div class="t mont cx" style="top:${V ? 1360 : 820}px;font-size:${V ? 34 : 30}px;color:#fff">Ici, chacun cherche quelque chose</div>`);
+  el.upd = t => { el.style.opacity = fade(t, t0, t1, .5); q(el, '.t').style.letterSpacing = (.25 + .12 * P(t, t0, t1)) + 'em'; }; }
+// 3. « Mais toi… tu vas chercher LA LUMIÈRE »
+{ const t0 = wt('l05', 'Mais') - .05, tL = wt('l06', 'lumiere') - .05, t1 = DROP;
+  const el = scene(t0, t1 + .05, `<div class="glow" style="width:10px;height:10px"></div><div class="rays"></div>
+    <div class="t mont cx m1" style="top:${V ? 1400 : 820}px;font-size:${V ? 38 : 32}px">Mais toi…</div>
+    <div class="t cin gold cx m2" style="top:${V ? 820 : 380}px;font-size:${V ? 120 : 150}px;letter-spacing:.06em">LA LUMIÈRE</div>`);
+  el.upd = t => { q(el, '.m1').style.opacity = fade(t, t0, wt('l06', 'tu') + .6, .3);
+    const k = eo(P(t, tL, tL + 1.2)); const m2 = q(el, '.m2'); m2.style.opacity = P(t, tL, tL + .4); m2.style.transform = `translateX(-50%) scale(${.9 + .1 * k})`; m2.style.letterSpacing = (.3 - .24 * k) + 'em'; m2.style.filter = `blur(${(1 - k) * 8}px)`;
+    const g = q(el, '.glow'), s = 40 + 1500 * eio(P(t, tL - .2, t1)) ; g.style.width = g.style.height = s + 'px'; g.style.margin = `${-s / 2}px 0 0 ${-s / 2}px`; g.style.opacity = P(t, tL - .3, tL + .3);
+    const r = q(el, '.rays'); r.style.opacity = .9 * P(t, tL, t1); r.style.transform = `rotate(${t * 6}deg) scale(${.6 + .6 * P(t, tL, t1)})`; };
+  ev(tL, 'shimmer', .8); }
+// 4. Montage : étiquettes façon jeu
+function tag(t0, t1, title, sub, top) {
+  const el = scene(t0, t1, `<div class="t" style="left:${V ? 70 : (top ? 560 : 150)}px;top:${top || (V ? 1330 : 740)}px"><div class="anton" style="font-size:${V ? 110 : 96}px;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.8)"><span class="mask"><span>${title}</span></span></div>
+    <div class="tag" style="position:relative;margin-top:10px"><i></i><span class="mont" style="font-size:${V ? 26 : 22}px;color:var(--gold)">${sub}</span></div></div>`);
+  el.upd = t => { el.style.opacity = 1 - P(t, t1 - .15, t1); q(el, '.mask>span').style.transform = `translateY(${(1 - eo(P(t, t0, t0 + .35))) * 110}%)`; q(el, '.tag').style.opacity = P(t, t0 + .2, t0 + .5); q(el, '.tag i').style.width = 64 * eo(P(t, t0 + .2, t0 + .6)) + 'px'; };
+  ev(t0, 'pop', .5);
+}
+tag(wt('l07', 'zemidjan') - .1, tTrav, 'Zémidjans', 'Taxis-motos · Taxis · Ta propre moto');
+tag(tTrav + .05, Lt('l08') - .12, 'Traverse la ville', 'Vraies rues · vraies cartes');
+tag(g0 + .05, g1, 'Aide ton prochain', 'Missions · Activités · Événements', V ? null : 790);
+// Prie / Apprends / Grandis
+[['l09', 'Prie', 'PRIE', g1, tApp], ['l09', 'Apprends', 'APPRENDS', tApp, tGr], ['l09', 'Grandis', 'GRANDIS', tGr, Lt('l10') - .15]].forEach(([l, w, txt, a, b]) =>
+  bigWord(wt(l, w) - .04, b, txt, txt === 'GRANDIS' ? { size: V ? 190 : 260, top: V ? 1300 : 330, sfx: 'impact' } : { size: V ? 190 : 150, top: V ? 1300 : 792, sfx: 'impact' }));
+// 5. Grades — la Marche chrétienne
+{ const t0 = Lt('l10') - .15, t1 = CITY0;
+  const G8 = ['Chercheur', 'Nouveau-né en Christ', 'Disciple', 'Serviteur', 'Témoin', 'Soldat de Christ', 'Faiseur de disciples', 'Ambassadeur de Christ'], RN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+  const cols = V ? 2 : 8, gx = V ? 380 : 214, gy = V ? 250 : 0, x0 = V ? (W - gx * 2) / 2 + gx / 2 - 105 + 0 : (W - gx * 8) / 2 + 2, y0 = V ? 560 : 500;
+  let h = `<div class="lay" style="background:radial-gradient(ellipse at 50% 45%,#2a1d08 0,#0b0906 55%,#030303 100%)"></div><div class="rays" style="opacity:.25"></div>
+    <div class="t mont cx" style="top:${V ? 300 : 250}px;font-size:${V ? 30 : 26}px;color:var(--gold)">La Marche chrétienne</div>
+    <div class="t anton cx" style="top:${V ? 350 : 300}px;font-size:${V ? 84 : 92}px;color:#fff">Du premier pas à la maturité</div>
+    <div class="line" style="top:${y0 + 37}px;left:${V ? -2000 : 220}px;width:${V ? 0 : W - 440}px;opacity:.35"></div><div class="line fill" style="top:${y0 + 37}px;left:220px;width:0"></div>`;
+  G8.forEach((g, i) => { const x = V ? (i % 2 ? 600 : 160) : x0 + i * gx, y = V ? y0 + Math.floor(i / 2) * 250 : y0; h += `<div class="grade g${i}" style="left:${x}px;top:${y}px"><div class="d"><span class="n">${RN[i]}</span></div><div class="l">${g}</div></div>`; });
+  const el = scene(t0, t1, h);
+  const tA = wt('l10', 'premier'), tB = wt('l10', 'maturite') + .35;
+  G8.forEach((g, i) => ev(lerp(tA, tB, i / 7), 'tick', .6));
+  el.upd = t => { el.style.opacity = Math.min(P(t, t0, t0 + .25), 1 - P(t, t1 - .2, t1)); q(el, '.rays').style.transform = `rotate(${t * 4}deg)`;
+    const k = P(t, tA, tB); if (!V) q(el, '.fill').style.width = (W - 440) * eio(k) + 'px';
+    G8.forEach((g, i) => { const on = P(t, lerp(tA, tB, i / 7) - .05, lerp(tA, tB, i / 7) + .25), gg = q(el, '.g' + i), d = gg.querySelector('.d');
+      gg.style.opacity = .35 + .65 * on; gg.style.transform = `translateY(${(1 - eo(P(t, t0 + i * .04, t0 + .5 + i * .04))) * 40}px) scale(${1 + .12 * on * (1 - P(t, lerp(tA, tB, i / 7) + .25, lerp(tA, tB, i / 7) + .6))})`;
+      d.style.borderColor = on > .5 ? 'var(--gold)' : 'rgba(246,196,69,.35)'; d.style.boxShadow = on > .5 ? `0 0 ${30 + (i === 7 ? 40 : 0)}px rgba(246,196,69,${.5 + (i === 7 ? .4 : 0)})` : 'none'; d.style.background = on > .5 ? 'rgba(60,40,8,.9)' : 'rgba(10,10,14,.6)'; }); };
+  ev(t0, 'whoosh', .6); }
+// 6. Villes
+CITIES.forEach((c, i) => { const t0 = cityT[i], t1 = i < 6 ? cityT[i + 1] : Le('l11') + .2;
+  const el = scene(t0, t1, `<div class="t" style="left:${V ? 70 : 150}px;top:${V ? 1310 : 640}px"><div class="mont" style="font-size:${V ? 28 : 24}px;color:var(--gold)">${String(i + 1).padStart(2, '0')} / 07 · ${c[2]}</div>
+    <div class="anton" style="font-size:${V ? 180 : 190}px;color:#fff;text-shadow:0 8px 40px rgba(0,0,0,.8)"><span class="mask"><span>${c[1]}</span></span></div></div>`);
+  el.upd = t => { q(el, '.mask>span').style.transform = `translateY(${(1 - eo(P(t, t0, t0 + .3))) * 110}%)`; q(el, '.mont').style.opacity = P(t, t0 + .1, t0 + .4); el.style.opacity = 1 - P(t, t1 - .08, t1); }; });
+// 7. Sept vraies villes. Une seule mission.
+{ const t0 = Le('l11') + .2, t1 = VERSE - .1, tU = wt('l12', 'Une') - .05;
+  let h = `<div class="lay" style="background:#050505"></div>`; const tw = V ? 470 : 420, th = V ? 300 : 236;
+  const pos = V ? CITIES.map((c, i) => [i % 2 ? 560 : 70, 330 + Math.floor(i / 2) * 330]) : CITIES.map((c, i) => [i < 4 ? 70 + i * 450 : 295 + (i - 4) * 450, i < 4 ? 170 : 430]);
+  if (V) pos[6] = [305, 1320];
+  CITIES.forEach((c, i) => h += `<div class="tile c${i}" style="left:${pos[i][0]}px;top:${pos[i][1]}px;width:${tw}px;height:${th}px"><img src="img/city_${c[0]}.jpg"><b>${c[1]}</b></div>`);
+  h += `<div class="t anton cx a1" style="top:${V ? 1700 : 722}px;font-size:${V ? 96 : 110}px;color:#fff"><span class="gold">7</span> vraies villes</div>
+        <div class="t anton gold cx a2" style="top:${V ? 820 : 400}px;font-size:${V ? 116 : 200}px">Une seule mission</div>
+        <div class="t mont cx a3" style="top:${V ? 1820 : 870}px;font-size:${V ? 20 : 18}px;color:rgba(255,255,255,.6)">Cartes réelles · données OpenStreetMap</div>`;
+  const el = scene(t0, t1, h);
+  el.upd = t => { CITIES.forEach((c, i) => { const k = spring(t - t0 - i * .07, 14, .6), d = q(el, '.c' + i), m = eio(P(t, tU - .1, tU + .45));
+      d.style.opacity = clamp((t - t0 - i * .07) / .1) * (1 - m); d.style.transform = `scale(${(.6 + .4 * k) * (1 - .5 * m)}) rotate(${(i % 2 ? 2 : -2) * (1 - k)}deg) translate(${((V ? 540 : 960) - pos[i][0] - tw / 2) * m}px, ${((V ? 960 : 540) - pos[i][1] - th / 2) * m}px)`; });
+    const a1 = q(el, '.a1'); a1.style.opacity = P(t, wt('l12', 'Sept') - .05, wt('l12', 'Sept') + .2) * (1 - P(t, tU - .2, tU)); a1.style.transform = `translateX(-50%) scale(${1.3 - .3 * spring(t - wt('l12', 'Sept'), 15, .6)})`;
+    const a2 = q(el, '.a2'); a2.style.opacity = P(t, tU, tU + .15); a2.style.transform = `translateX(-50%) scale(${1.5 - .5 * spring(t - tU - .1, 15, .55)})`;
+    q(el, '.a3').style.opacity = P(t, t0 + .6, t0 + 1) * (1 - P(t, tU - .2, tU)); el.style.opacity = 1 - P(t, t1 - .15, t1); };
+  CITIES.forEach((c, i) => ev(t0 + i * .07, 'pop', .35)); ev(wt('l12', 'Sept') - .05, 'impact', .7); ev(tU, 'impact', .9); }
+// 8. Verset — Matthieu 5:14 (Louis Segond 1910)
+{ const t0 = VERSE + .2, t1 = Lt('l13') - .2;
+  const v1 = 'Vous êtes la lumière du monde.', v2 = 'Une ville située sur une montagne ne peut être cachée.';
+  const el = scene(t0, t1, `<div class="t cin cx l1" style="top:${V ? 760 : 360}px;font-size:${V ? 62 : 70}px;color:#fff;white-space:${V ? 'normal' : 'nowrap'};width:${V ? 940 : 'auto'};text-align:center">${wordsHTML(v1)}</div>
+    <div class="t cx l2" style="top:${V ? 1000 : 480}px;font-family:Mont;font-weight:500;font-size:${V ? 40 : 38}px;color:rgba(255,255,255,.85);white-space:${V ? 'normal' : 'nowrap'};width:${V ? 900 : 'auto'};text-align:center;line-height:1.35">${wordsHTML(v2)}</div>
+    <div class="t mont gold cx l3" style="top:${V ? 1220 : 600}px;font-size:${V ? 26 : 24}px">Matthieu 5:14</div><div class="line l4 cx" style="top:${V ? 1190 : 572}px;width:0"></div>`);
+  el.upd = t => { revealWords(q(el, '.l1'), t, t0 + .2, .12); revealWords(q(el, '.l2'), t, t0 + 1.6, .09); q(el, '.l3').style.opacity = P(t, t0 + 2.8, t0 + 3.3); q(el, '.l4').style.width = 360 * eo(P(t, t0 + 2.6, t0 + 3.4)) + 'px';
+    el.style.opacity = 1 - P(t, t1 - .35, t1); }; }
+// 9. « Sois la lumière dans la ville »
+{ const t0 = wt('l13', 'Sois') - .08, t1 = LOGO - .02;
+  const el = scene(t0, t1, `<div class="t cin cx s" style="top:${V ? 1330 : 780}px;font-size:${V ? 60 : 64}px;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.9)">${wordsHTML('Sois la lumière dans la ville')}</div>`);
+  el.upd = t => { revealWords(q(el, '.s'), t, t0, .14); q(el, '.s').style.letterSpacing = (.04 + .03 * P(t, t0, t1)) + 'em'; }; }
+// 10. LOGO
+{ const t0 = LOGO, t1 = Lt('l15') - .35;
+  const el = scene(t0, DUR, `<div class="glow g" style="width:1600px;height:1600px;margin:-800px 0 0 -800px;opacity:.55"></div><div class="rays r"></div>
+    <div class="t cx logo" style="top:${V ? 690 : 300}px;text-align:center">
+      <div class="cin z" style="font-size:${V ? 210 : 230}px;line-height:1;color:var(--gold2);letter-spacing:.1em;background:linear-gradient(180deg,#FFF6D8 0%,#F6C445 45%,#B9781C 100%);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 10px 30px rgba(0,0,0,.8)) drop-shadow(0 0 40px rgba(246,196,69,.35))">ZION</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:28px;margin-top:6px"><i class="ll" style="display:block;height:4px;background:var(--gold)"></i><span class="cin c" style="font-size:${V ? 92 : 96}px;color:#fff;letter-spacing:.42em;margin-right:-.42em">CITY</span><i class="ll" style="display:block;height:4px;background:var(--gold)"></i></div>
+      <div class="mont st" style="margin-top:34px;font-size:${V ? 28 : 26}px;color:var(--gold)">Lumière dans la ville</div></div>
+    <div class="end" style="position:absolute;inset:0">
+      <div class="t anton cx e1" style="top:${V ? 1330 : 712}px;font-size:${V ? 76 : 64}px;color:#fff">Disponible maintenant · <span class="gold">Gratuit</span></div>
+      <div class="t mont cx e2" style="top:${V ? 1440 : 800}px;font-size:${V ? 24 : 22}px;color:rgba(255,255,255,.85)">Téléphone · Ordinateur · Français / English</div>
+      <div class="t cx e3" style="top:${V ? 1520 : 858}px;font-family:Mont;font-weight:700;font-size:${V ? 34 : 30}px;color:#111;background:var(--gold);padding:14px 34px;border-radius:999px;letter-spacing:.02em">gavoekoffi2.github.io/GTA-Chr-tien</div>
+      <div class="t mont cx e4" style="top:${V ? 1820 : 1000}px;font-size:${V ? 13 : 12}px;letter-spacing:.12em;color:rgba(255,255,255,.45);text-transform:none">Séquences capturées dans le jeu · Cartes © contributeurs OpenStreetMap · Personnages Microsoft Rocketbox</div></div>`);
+  el.upd = t => { const k = spring(t - t0, 9, .7), lg = q(el, '.logo'), up = eio(P(t, t1, t1 + .9));
+    lg.style.transform = `translateX(-50%) translateY(${-up * (V ? 230 : 150)}px) scale(${(1.25 - .25 * k) * (1 - .3 * up)})`; lg.style.opacity = clamp((t - t0) / .15);
+    q(el, '.z').style.letterSpacing = (.32 - .22 * eo(P(t, t0, t0 + 2.2))) + 'em';
+    el.querySelectorAll('.ll').forEach(l => l.style.width = 120 * eo(P(t, t0 + .5, t0 + 1.4)) + 'px'); q(el, '.st').style.opacity = P(t, t0 + 1, t0 + 1.6);
+    q(el, '.r').style.transform = `rotate(${t * 5}deg) scale(${.7 + .3 * k})`; q(el, '.r').style.opacity = .8 - .4 * up; q(el, '.g').style.opacity = .55 * (1 - .5 * up);
+    const e = [['.e1', t1 + .4], ['.e2', t1 + .8], ['.e3', wt('l15', 'telephone') - .3], ['.e4', t1 + 1.6]];
+    e.forEach(([s, a]) => { const d = q(el, s); d.style.opacity = P(t, a, a + .35); d.style.transform = `translateX(-50%) translateY(${(1 - eo(P(t, a, a + .5))) * 30}px) scale(${s === '.e3' ? 1 + .04 * Math.sin((t - a) * 6) * P(t, a + .5, a + 1) : 1})`; }); };
+  ev(t1 + .4, 'pop', .6); ev(wt('l15', 'telephone') - .3, 'ding', .7); }
+// ---------- moteur ----------
+const IMGS = {}, fa = $('fa'), fb = $('fb'), bg = $('bgblur'); let curSrc = '';
+function srcFor(c, t) {
+  if (c.img) return `img/${c.img}.jpg`;
+  const n = FR[c.clip]; const f = Math.max(0, Math.min(n - 1, Math.floor((c.off + (t - c.t0) * c.speed) * 30)));
+  return `raw/${c.clip}/${String(f).padStart(4, '0')}.jpg`;
+}
+const G = document.getElementById('grain').getContext('2d'), gimg = G.createImageData(320, 180);
+function grain(t) { let s = Math.floor(t * 24) * 9973 + 1; const d = gimg.data; for (let i = 0; i < d.length; i += 4) { s = (s * 16807) % 2147483647; const v = 128 + ((s & 255) - 128) * .9; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } G.putImageData(gimg, 0, 0); }
+async function seekAsync(t) {
+  const c = C.find(c => t >= c.t0 && t < c.t1);
+  let pending = [];
+  if (c) {
+    const src = srcFor(c, t); if (fa.getAttribute('src') !== src) { fa.src = src; pending.push(fa.decode().catch(() => {})); if (V) { bg.src = src; pending.push(bg.decode().catch(() => {})); } }
+    fa.style.display = 'block';
+    const u = P(t, c.t0, c.t1), [s0, s1, x0, x1, y0, y1] = c.kb, s = lerp(s0, s1, eio(u) * .5 + u * .5);
+    let sx = 0, sy = 0; if (c.shake) { const a = Math.max(0, 1 - (t - c.t0) / .35); sx = Math.sin(t * 77) * 14 * a; sy = Math.cos(t * 63) * 10 * a; }
+    fa.style.transform = `translate(${lerp(x0, x1, u) + sx}px, ${lerp(y0, y1, u) + sy}px) scale(${s})`; fa.style.left = '0'; fa.style.top = '0';
+    fa.style.filter = GRADES[c.grade] || '';
+    const fr = c.frame && !V; bg.style.display = (V || fr) ? 'block' : 'none'; if (fr) { if (bg.getAttribute('src') !== src) { bg.src = src; pending.push(bg.decode().catch(() => {})); } fa.style.transform = `translate(${sx}px, ${-80 + sy}px) scale(${.58 * s})`; fa.style.outline = '6px solid #fff'; fa.style.boxShadow = '0 40px 120px rgba(0,0,0,.8)'; } else { fa.style.outline = 'none'; fa.style.boxShadow = 'none'; }
+    let o = 1; if (c.fin) o = Math.min(o, P(t, c.t0, c.t0 + c.fin)); if (c.clip === 'hero') o *= .25 + .75 * P(t, wt('l06', 'lumiere') - .5, DROP);
+    $('black').style.opacity = 1 - o;
+  } else { fa.style.display = 'none'; $('black').style.opacity = 1; }
+  // scènes
+  for (const s of SC) { const on = t >= s.t0 && t < s.t1; s.el.style.display = on ? 'block' : 'none'; if (on) s.el.upd(t); }
+  // flash : drop, logo, coupes rapides
+  let fl = 0; for (const [a, k, d] of [[DROP, 1, .5], [LOGO, 1, .7], [tGr, .5, .25], [g1, .4, .2], [tApp, .4, .2], [CITY0, .6, .3], [VERSE - .1, .5, .6]]) if (t >= a) fl = Math.max(fl, k * (1 - P(t, a, a + d)));
+  fl = Math.max(fl, .9 * P(t, DROP - .25, DROP) * (t < DROP ? 1 : 0)); $('flash').style.opacity = fl;
+  // fuite de lumière au drop et au logo
+  const lk = Math.max(1 - Math.abs(t - DROP - .4) / 1.0, 1 - Math.abs(t - LOGO - .3) / 1.2, 0); const lx = (t * 37) % 100;
+  $('leak').style.opacity = lk * .8; $('leak').style.background = `radial-gradient(circle at ${lx}% 40%, rgba(255,170,60,.9), rgba(255,90,20,.35) 30%, transparent 60%)`;
+  // bandes cinéma : se retirent sur les écrans graphiques
+  grain(t);
+  await Promise.all(pending); await new Promise(r => requestAnimationFrame(r));
+}
+window.seekAsync = seekAsync; window.seek = t => seekAsync(t);
+window.READY = document.fonts.ready.then(() => Promise.all(['Anton', 'Bebas', 'Cinzel', 'Mont'].map(f => document.fonts.load(`40px ${f}`)))).then(() => seekAsync(0)).then(() => true);
+</script></body></html>
