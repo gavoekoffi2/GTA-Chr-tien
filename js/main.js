@@ -78,6 +78,7 @@ function applyQuality() {
 function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize);
 
+G.forceSky = () => updateSky(0, true);
 function updateSky(dt, force) {
   G.tod = (G.tod + dt / 780) % 1;
   const sv = Math.sin((G.tod - 0.25) * Math.PI * 2) * 0.9 + 0.6, el = Math.max(-0.25, Math.min(1.2, sv * 0.85)), az = 0.6 + G.tod * 2.2;
@@ -282,6 +283,7 @@ function interact() {
 
 function frame() {
   requestAnimationFrame(frame);
+  if (G.hold) return; // tournage image par image (bande-annonce)
   const dt = Math.min(0.05, clock.getDelta());
   if (G.paused) { if (G.input.take('KeyP') || G.input.take('Escape')) resumeGame(); renderer.render(G.scene, camera); return; }
   G.time += dt;
