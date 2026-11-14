@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { S, L } from './state.js';
 import { facadeTex, shopTex, wallTex, leafTex } from './facades.js';
 import { decorate } from './citylife.js';
+import { preloadLandmarks, placeLandmarks, clearZones } from './landmarks.js';
 
 export const WIDTH = [14, 11, 9, 7, 4.5, 2.5];
 export const CITIES = {
@@ -191,11 +192,11 @@ function pip(p, x, z) { let c = false; for (let i = 0, j = p.length - 2; i < p.l
 
 export class World {
   static async create(scene, cityId, quality) {
-    const data = await fetch(`assets/cities/${cityId}.json`).then(r => r.json());
-    return new World(scene, cityId, quality, data);
+    const [data, models] = await Promise.all([fetch(`assets/cities/${cityId}.json`).then(r => r.json()), preloadLandmarks(cityId)]);
+    return new World(scene, cityId, quality, data, models);
   }
-  constructor(scene, cityId, quality, data) {
-    this.scene = scene; this.id = cityId; this.cfg = CITIES[cityId]; this.q = quality; this.data = data;
+  constructor(scene, cityId, quality, data, models = []) {
+    this.scene = scene; this.id = cityId; this.cfg = CITIES[cityId]; this.q = quality; this.data = data; this.models = models; this.clear = clearZones(cityId);
     this.group = new THREE.Group(); scene.add(this.group);
     this.rng = rng32(cityId.length * 977 + 5);
     this.buckets = {}; this.mats = {}; this.segGrid = new Map(); this.polyGrid = new Map();
@@ -374,6 +375,7 @@ export class World {
       let ar = 0, cx = 0, cz = 0; for (let i = 0; i < n; i++) { const j = (i + 1) % n; ar += p[i * 2] * p[j * 2 + 1] - p[j * 2] * p[i * 2 + 1]; cx += p[i * 2]; cz += p[i * 2 + 1]; }
       ar = Math.abs(ar / 2); cx /= n; cz /= n;
       if (this.fuelSpots.some(f => Math.hypot(f[0] - cx, f[1] - cz) < 13 + Math.sqrt(ar) * 0.5)) continue;
+      if (this.clear.some(c => Math.hypot(c[0] - cx, c[1] - cz) < c[2])) continue;   // remplacé par un monument modélisé
       let color = cfg.walls[rng() * cfg.walls.length | 0], style; const r0 = rng(), two = (a, b) => (rng() < 0.5 ? a : b);
       if (kind === 1) { style = cfg.style || 'plaster'; color = cfg.style ? cfg.walls[0] : '#f1ece0'; }
       else if (cfg.style) { style = lv >= 9 ? 'glass' : cfg.style; if (style === 'glass') color = 'x'; }
@@ -452,6 +454,7 @@ export class World {
   }
 
   landmark(lm) {
+    if (this.models.length) { placeLandmarks(this, this.models); if (this.models.some(m => m.def.plaza)) return; }
     const id = this.id, cx = lm.cx, cz = lm.cz, y = 0, wh = this.bk('plaster:#f5f3ee');
     const add = m => { m.castShadow = true; this.group.add(m); return m; };
     const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, ...o });
