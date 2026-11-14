@@ -55,6 +55,8 @@ def add_building(p,t):
     if a<0: p=p[::-1]; a=-a
     c=cen(p)
     if not (X0<c[0]<X1 and Z0<c[1]<Z1): return
+    ext=cfg.get('extension')   # zone ajoutée autour d'un monument : on ne garde que les bâtiments proches (performance)
+    if ext and c[1]<ext['z'] and not any(math.hypot(c[0]-k[0],c[1]-k[1])<k[2] for k in ext['keep']): return
     p=simp(p)
     lv=None
     try: lv=int(float(t.get('building:levels')))

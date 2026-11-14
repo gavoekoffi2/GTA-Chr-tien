@@ -10,6 +10,8 @@ export const MODELS = {
       collide: [[-4.75, -0.9, 4.75, 0.9], [-5.75, -2.3, -4.75, 2.3], [4.75, -2.3, 5.75, 2.3], [-9.5, 2.0, -5.6, 7.6], [-9.5, -7.6, -5.6, -2.0], [5.6, 2.0, 9.5, 7.6], [5.6, -7.6, 9.5, -2.0], [-7, 0.9, 7, 5.6]] },
     { id: 'hotel2fevrier', name: 'Hôtel 2 Février', url: 'assets/landmarks/lome_hotel2fevrier.glb', x: -901, z: 169, rot: 0, y: 0, clear: [[-885, 156, 12], [-861, 120, 9]],
       collideWorld: [[-878.9, 113.3, -892.5, 98.7, -914.0, 114.9, -929.9, 137.0, -894.1, 161.4, -899.0, 166.8, -908.2, 159.2, -930.5, 178.0, -940.1, 200.5, -916.6, 218.4, -894.4, 201.5, -887.0, 178.3, -893.4, 171.7, -888.3, 165.9, -871.8, 184.1, -852.2, 165.3, -849.7, 167.1, -848.3, 165.3, -846.5, 166.6, -835.2, 142.5, -852.6, 133.9, -863.9, 126.2, -869.3, 121.6]], collideRot: { cx: -901, cz: 169, ax: [0.8, 0.6], ay: [0.6, -0.8], w: 50, d: 16 } },
+    { id: 'colombe', name: 'Colombe de la Paix', url: 'assets/landmarks/lome_colombe.glb', x: 781, z: -2153, rot: Math.PI / 2, y: 0.05, clear: [[781, -2153, 16]],
+      collideRound: [781, -2153, 8.6] },
   ],
 };
 
@@ -28,7 +30,7 @@ function prepare(root) {
     const n = (m.name || '') + ' ' + (o.name || '');
     if (/perce/.test(n)) { m.alphaTest = 0.5; m.transparent = false; m.side = THREE.DoubleSide; }
     if (/texte|relief/.test(n)) { m.alphaTest = 0.35; m.transparent = false; m.polygonOffset = true; m.polygonOffsetFactor = -2; }
-    if (/beton|socle/.test(n)) m.color.set(0xf2d3a8);          // teinte ocre du béton de Lomé
+    if (/beton|monument_socle/.test(n)) m.color.set(0xf2d3a8);          // teinte ocre du béton de Lomé
     if (/statue/.test(n)) m.color.set(0xc9c2b6);
     if (/bronze|flamme/.test(n)) { m.metalness = 0.85; m.roughness = 0.35; }
     else if (/verre/.test(n)) { m.metalness = 0.45; m.roughness = 0.12; m.color.set(0xaab6c2); }
@@ -75,6 +77,7 @@ export function placeLandmarks(w, loaded) {
   for (const { def, scene } of loaded) {
     prepare(scene); scene.position.set(def.x, def.y ?? 0.62, def.z); scene.rotation.y = def.rot; w.group.add(scene);
     if (def.collideWorld) w.addPoly(def.collideWorld);
+    if (def.collideRound) { const [cx, cz, r] = def.collideRound, P = []; for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; P.push(cx + Math.cos(a) * r, cz + Math.sin(a) * r); } w.addPoly(P); }
     if (def.collideRot) { const r = def.collideRot, hx = r.w / 2, hy = r.d / 2, P = (a, b) => [r.cx + r.ax[0] * a + r.ay[0] * b, r.cz + r.ax[1] * a + r.ay[1] * b]; w.addPoly([...P(-hx, -hy), ...P(hx, -hy), ...P(hx, hy), ...P(-hx, hy)]); }
     const cs = Math.cos(def.rot), sn = Math.sin(def.rot), tw = (lx, lz) => [def.x + lx * cs + lz * sn, def.z - lx * sn + lz * cs];
     for (const [x0, z0, x1, z1] of def.collide || []) w.addPoly([...tw(x0, z0), ...tw(x1, z0), ...tw(x1, z1), ...tw(x0, z1)]);
