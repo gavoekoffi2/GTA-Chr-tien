@@ -438,11 +438,12 @@ export class World {
     if (this.rivers.length) { let best = null, bd = 1e9; for (const p of this.rivers) for (let i = 0; i < p.length; i += 2) { const dd = (p[i] - ch.x) ** 2 + (p[i + 1] - ch.z) ** 2; if (dd < bd && p[i] > this.bounds.x0 && p[i] < this.bounds.x1 && p[i + 1] > this.bounds.z0 && p[i + 1] < this.bounds.z1) { bd = dd; best = [p[i], p[i + 1]]; } } if (best) { const f = this.freeNear(best[0], best[1] + this.cfg.riverW / 2 + 6, 1); this.pois.beach = { x: f.x, z: f.z, cx: best[0], cz: best[1], face: 0, name: '' }; } }
     this.pois.altar = this.pois.church;
     this.homeSpot = this.pois.home;
-    // clocher et croix sur l'église
+    // clocher et croix sur l'église (sauf si l'église réelle est modélisée)
+    if (!this.models.some(m => m.def.replaces === 'church')) {
     const cb = this.nearestBuilding(ch.cx, ch.cz, b => b.ar > 80) || { cx: ch.cx, cz: ch.cz, h: 9 };
     const w = this.bk('plaster:#f4f0e6'), H = cb.h + 11; w.sides(cb.cx - 2.4, 0, cb.cz - 2.4, cb.cx + 2.4, H, cb.cz + 2.4, 4, 4);
     this.bk('tin:#8e2f25').hip(cb.cx - 2.8, cb.cz - 2.8, cb.cx + 2.8, cb.cz + 2.8, H, 5.5);
-    const cr = this.bk('flat:#ffffff'); cr.box(cb.cx - 0.16, H + 5.3, cb.cz - 0.16, cb.cx + 0.16, H + 9, cb.cz + 0.16); cr.box(cb.cx - 1.1, H + 7.3, cb.cz - 0.16, cb.cx + 1.1, H + 7.65, cb.cz + 0.16); cr.box(cb.cx - 0.16, H + 7.3, cb.cz - 1.1, cb.cx + 0.16, H + 7.65, cb.cz + 1.1);
+    const cr = this.bk('flat:#ffffff'); cr.box(cb.cx - 0.16, H + 5.3, cb.cz - 0.16, cb.cx + 0.16, H + 9, cb.cz + 0.16); cr.box(cb.cx - 1.1, H + 7.3, cb.cz - 0.16, cb.cx + 1.1, H + 7.65, cb.cz + 0.16); cr.box(cb.cx - 0.16, H + 7.3, cb.cz - 1.1, cb.cx + 0.16, H + 7.65, cb.cz + 1.1); }
     this.landmark(this.pois.landmark);
     // stations-service (réelles d'après la carte, complétées si besoin) et vendeur de motos
     this.fuelStations = []; const fl = (d.fuel || []).slice();

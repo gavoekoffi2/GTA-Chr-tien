@@ -12,6 +12,8 @@ export const MODELS = {
       collideWorld: [[-878.9, 113.3, -892.5, 98.7, -914.0, 114.9, -929.9, 137.0, -894.1, 161.4, -899.0, 166.8, -908.2, 159.2, -930.5, 178.0, -940.1, 200.5, -916.6, 218.4, -894.4, 201.5, -887.0, 178.3, -893.4, 171.7, -888.3, 165.9, -871.8, 184.1, -852.2, 165.3, -849.7, 167.1, -848.3, 165.3, -846.5, 166.6, -835.2, 142.5, -852.6, 133.9, -863.9, 126.2, -869.3, 121.6]], collideRot: { cx: -901, cz: 169, ax: [0.8, 0.6], ay: [0.6, -0.8], w: 50, d: 16 } },
     { id: 'colombe', name: 'Colombe de la Paix', url: 'assets/landmarks/lome_colombe.glb', x: 781, z: -2153, rot: Math.PI / 2, y: 0.05, clear: [[781, -2153, 16]],
       collideRound: [781, -2153, 8.6] },
+    { id: 'cathedrale', name: 'Cathédrale du Sacré-Cœur', url: 'assets/landmarks/lome_cathedrale.glb', x: 375.6, z: 561.1, rot: -2.8115, y: 0, replaces: 'church', clear: [[379.5, 572.4, 8]],
+      collideRot: { cx: 375.6, cz: 561.1, ax: [0.946, -0.324], ay: [0.324, 0.946], w: 15.4, d: 40 } },
   ],
 };
 
@@ -29,6 +31,7 @@ function prepare(root) {
     const m = o.material; if (!m) return;
     const n = (m.name || '') + ' ' + (o.name || '');
     if (/perce/.test(n)) { m.alphaTest = 0.5; m.transparent = false; m.side = THREE.DoubleSide; }
+    if (/cath_fleche/.test(n)) { m.alphaTest = 0.5; m.transparent = false; m.side = THREE.DoubleSide; }
     if (/texte|relief/.test(n)) { m.alphaTest = 0.35; m.transparent = false; m.polygonOffset = true; m.polygonOffsetFactor = -2; }
     if (/beton|monument_socle/.test(n)) m.color.set(0xf2d3a8);          // teinte ocre du béton de Lomé
     if (/statue/.test(n)) m.color.set(0xc9c2b6);
