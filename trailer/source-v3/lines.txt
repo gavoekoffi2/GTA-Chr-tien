@@ -1,0 +1,24 @@
+l01|-6%|-8Hz|Tout le monde connaît GTA.
+l02|+2%|-6Hz|Voler des voitures. Fuir la police. Semer le chaos.
+l03|-8%|-8Hz|Et si on renversait tout ?
+l04|-10%|-10Hz|Voici Zion City.
+l05|-12%|-10Hz|Le GTA des chrétiens.
+l07|-4%|-8Hz|Mais ici, au lieu de commettre des crimes,
+l08|-6%|-8Hz|tu fais des bonnes actions.
+l09|+0%|-6Hz|Au lieu de voler, tu donnes.
+l10|+0%|-6Hz|Au lieu de te battre, tu pardonnes.
+l11|+0%|-6Hz|Au lieu de fuir, tu sers.
+l12|-6%|-8Hz|Et chaque bonne action te fait grandir dans le Seigneur.
+l13|-6%|-8Hz|Du premier pas de foi, jusqu'à la maturité.
+l15|-2%|-6Hz|Prie. Apprends. Aide. Grandis.
+l16|-10%|-10Hz|Sois la lumière dans la ville.
+l17|-10%|-10Hz|Zion City. Le GTA des chrétiens.
+l18|+0%|-6Hz|Gratuit. Maintenant. Sur ton téléphone et ton ordinateur.
+n06|-8%|-9Hz|Bienvenue à Lomé.
+n07|-3%|-7Hz|Ses rues. Ses zémidjans. Ses monuments.
+n08|+0%|-6Hz|Monte sur ta moto. Traverse la ville.
+n09|-3%|-7Hz|De la place de l'Indépendance, jusqu'à la Colombe de la Paix.
+h01|-4%|-7Hz|G.T.A. San Andreas... Certains l'appellent même, Si Djé.
+l05b|-10%|-10Hz|Le jeu qui édifie ta foi.
+e01|-4%|-8Hz|Un jeu conçu pour l'édification de la foi. Pour les jeunes, pour les enfants, et pour toute la famille.
+l17b|-10%|-10Hz|Zion City. Le jeu qui édifie ta foi.
