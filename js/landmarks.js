@@ -14,6 +14,8 @@ export const MODELS = {
       collideRound: [781, -2153, 8.6] },
     { id: 'cathedrale', name: 'Cathédrale du Sacré-Cœur', url: 'assets/landmarks/lome_cathedrale.glb', x: 375.6, z: 561.1, rot: -2.8115, y: 0, replaces: 'church', clear: [[379.5, 572.4, 8]],
       collideRot: { cx: 375.6, cz: 561.1, ax: [0.946, -0.324], ay: [0.324, 0.946], w: 15.4, d: 40 } },
+    { id: 'palais_congres', name: 'Palais des Congrès (Parlement)', url: 'assets/landmarks/lome_palais_congres.glb', x: -601.6, z: -62.3, rot: 0, y: 0, clear: [[-607, -54, 10]],
+      collideWorld: [-545.9, -67.0, -555.2, -63.0, -562.8, -59.4, -573.0, -53.3, -578.3, -49.7, -583.6, -45.7, -588.2, -41.2, -592.7, -36.0, -596.8, -30.6, -599.8, -25.9, -603.6, -20.1, -606.6, -13.8, -609.5, -7.1, -611.9, 1.0, -613.6, 7.7, -614.9, 14.1, -624.1, 13.3, -622.9, 5.6, -622.5, -6.2, -622.8, -18.9, -624.0, -28.2, -626.3, -38.5, -628.6, -45.0, -631.1, -54.1, -635.0, -62.6, -637.8, -69.9, -642.7, -79.1, -647.4, -86.1, -652.2, -93.3, -656.5, -98.5, -659.7, -101.8, -654.9, -106.2, -650.5, -101.9, -642.3, -95.2, -634.0, -90.5, -623.9, -85.3, -614.7, -82.1, -603.1, -79.5, -589.4, -77.9, -579.1, -78.0, -568.9, -79.9, -557.2, -82.3, -551.5, -83.9, -547.6, -72.2] },
   ],
 };
 
@@ -37,6 +39,7 @@ function prepare(root) {
     if (/statue/.test(n)) m.color.set(0xc9c2b6);
     if (/bronze|flamme/.test(n)) { m.metalness = 0.85; m.roughness = 0.35; }
     else if (/verre/.test(n)) { m.metalness = 0.45; m.roughness = 0.12; m.color.set(0xaab6c2); }
+    else if (/pdc_/.test(m.name || '')) { if (/facade|rez/.test(m.name)) { m.metalness = 0.3; m.roughness = 0.15; } }
     else if (/acier|dome|marbre|socle_mat|toit/.test(m.name || '')) { /* matières de l'hôtel : garder les valeurs */ }
     else if (m.roughness !== undefined) m.roughness = Math.max(m.roughness, 0.85);
   });
@@ -52,6 +55,10 @@ function plazaIndependance(w, x, z, rot) {
   const paveT = cvTex(c => { c.fillStyle = '#9e9284'; c.fillRect(0, 0, 256, 256); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const v = 168 + rr() * 26; c.fillStyle = `rgb(${v},${v - 8},${v - 22})`; c.fillRect(i * 64 + 1.5, j * 64 + 1.5, 61, 61); }
     for (let k = 0; k < 900; k++) { c.fillStyle = `rgba(60,50,40,${rr() * 0.12})`; c.fillRect(rr() * 256, rr() * 256, 2, 2); } }, 34);
   disc(0, 62, 0.04, std({ map: paveT, roughness: 0.6 }));
+  { // grande esplanade dallée jusqu'au Palais des Congrès (vers l'est du monument, repère monde)
+    const px = -601.6 - x, pz = -62.3 - z, L = Math.hypot(px, pz), a = Math.atan2(px, pz), pv = paveT.clone(); pv.repeat.set(16, 60); pv.needsUpdate = true;
+    const es = new THREE.Mesh(new THREE.PlaneGeometry(90, L), std({ map: pv, roughness: 0.6 })); es.rotation.order = 'YXZ'; es.rotation.set(-Math.PI / 2, a - rot, 0);
+    es.position.set(Math.sin(a - rot) * L / 2, 0.035, Math.cos(a - rot) * L / 2); es.receiveShadow = true; g.add(es); }
   const grassT = cvTex(c => { c.fillStyle = '#3b5a20'; c.fillRect(0, 0, 256, 256); for (let k = 0; k < 6000; k++) { const v = rr(); c.fillStyle = `rgba(${30 + v * 60},${60 + v * 55},${15 + v * 25},0.6)`; c.fillRect(rr() * 256, rr() * 256, 1.5, 3); } }, 14);
   // allée dallée sombre vers l'avant (axe de la statue)
   const al = new THREE.Mesh(new THREE.PlaneGeometry(6, 60), std({ color: 0x6f675d, roughness: 0.6 })); al.rotation.x = -Math.PI / 2; al.position.set(0, 0.05, 30); g.add(al);

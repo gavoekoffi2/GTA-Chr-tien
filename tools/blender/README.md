@@ -9,6 +9,7 @@ plans OpenStreetMap / Wikidata, puis exporté en glTF (`assets/landmarks/`) avec
 | Monument de l'Indépendance (Lomé) | `monument.py` (+ `hole_m.json` : silhouette découpée relevée sur photo) | photos Commons « Monument de l'Indépendance, Lomé », Wikidata Q39048890 |
 | Colombe de la Paix (Lomé, place de la Paix) | `colombe.py` | photos Commons « Peace dove statue in Lomé », position OSM (rond-point Place de la Paix) |
 | Cathédrale du Sacré-Cœur (Lomé) | `cathedrale/tex.py` (façades peintes) + `cathedrale/cathedrale.py` | photos Commons « Sacred Heart Cathedral, Lomé », emprise OSM (40 × 15 m) |
+| Palais des Congrès / Parlement (Lomé) | `palais/palais.py` (+ `pdc_geo.json` : emprise OSM en étoile) | photos Commons « Palais des congrès de Lomé », emprise OSM way 112412981 |
 | Hôtel 2 Février (Lomé) | `hotel.py` (emprise du socle : `footprints.json`, OSM) | photos Commons « Hotel 2 Fevrier, Lomé », Wikidata Q1643159 |
 
 Refaire : `GAME=1 blender -b --python monument.py` → `blender -b --python bake_export.py -- monument_jeu.blend sortie.glb "groupes"`
