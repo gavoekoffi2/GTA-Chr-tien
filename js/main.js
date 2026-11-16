@@ -12,6 +12,7 @@ import { Crowd, makeMarker, makeItem } from './npc.js';
 import { Missions } from './missions.js';
 import { Economy, PRICE, fmt } from './economy.js';
 import { Activities, makeIcon, scaleIcon } from './activities.js';
+import { Jobs, upgradeVehicle } from './jobs.js';
 import { audio, STATIONS, CREDITS } from './audio.js';
 import { WALK_MISSIONS, CITY_MISSIONS, VERSES, GRADES, SCROLLS, GREETINGS } from './content.js';
 
@@ -25,7 +26,7 @@ const X = {
   mode: ['Choisis ton chemin', 'Choose your path'], walk: ['La Marche chrétienne', 'The Christian Walk'], walkD: ['De la nouvelle naissance à la maturité : 7 grades, 21 étapes. Prière, Parole, service, témoignage, combat, disciples.', 'From new birth to maturity: 7 ranks, 21 steps. Prayer, Word, service, witness, warfare, disciples.'],
   city: ['Lumière dans la ville', 'Light in the City'], cityD: ['Missions libres dans la ville : secourir, nourrir, réconcilier, pardonner. Vis ta foi au quotidien.', 'Free missions around the city: rescue, feed, reconcile, forgive. Live out your faith every day.'],
   both: ['Les deux chemins restent ouverts : tu peux changer à tout moment depuis le menu ☰.', 'Both paths stay open: you can switch at any time from the ☰ menu.'],
-  tabs: [['Missions', 'Missions'], ['Ma Bible', 'My Bible'], ['Grades', 'Ranks'], ['Musique', 'Music'], ['Options', 'Options'], ['Activités', 'Activities']], noVerse: ['Accomplis des missions et cherche les parchemins pour remplir ta Bible.', 'Complete missions and look for scrolls to fill your Bible.'],
+  tabs: [['Missions', 'Missions'], ['Ma Bible', 'My Bible'], ['Grades', 'Ranks'], ['Musique', 'Music'], ['Options', 'Options'], ['Activités', 'Activities'], ['Ma vie', 'My life']], noVerse: ['Accomplis des missions et cherche les parchemins pour remplir ta Bible.', 'Complete missions and look for scrolls to fill your Bible.'],
   callMoto: ['Faire venir ma moto', 'Bring my motorbike'], callCar: ['Faire venir ma voiture', 'Bring my car'], callZem: ['Appeler un zémidjan', 'Call a moto-taxi'], zemJob: ['Travailler comme zémidjan / taxi', 'Work as a moto-taxi / taxi'], stopJob: ['Arrêter le travail', 'Stop working'],
   outfit: ['Personnage et vêtements (tailleur)', 'Character and clothes (tailor)'], quality: ['Qualité graphique', 'Graphics quality'], sound: ['Sons', 'Sound'],
   menu: ['Menu principal', 'Main menu'], resume: ['Reprendre', 'Resume'], on: ['activés', 'on'], off: ['coupés', 'off'], done: ['accompli', 'done'], abandon: ['Abandonner la mission en cours', 'Abandon current mission'],
@@ -44,13 +45,13 @@ const x = k => L(X[k]);
 
 const G = {
   scene: new THREE.Scene(), time: 0, tod: 0.3, state: 'boot', vehicles: [], scrollItems: [], switching: false, quality: 'high',
-  reward(r) { for (const k of ['faith', 'love', 'wisdom']) if (r[k]) S.stats[k] += r[k]; const m = (r.talents || 0) * 50 + (r.money || 0); if (m) S.money += m; this.refreshHud(); },
+  reward(r) { for (const k of ['faith', 'love', 'wisdom']) if (r[k]) S.stats[k] += k === 'wisdom' && S.up && S.up.bible ? Math.round(r[k] * 1.25) : r[k]; const m = (r.talents || 0) * 50 + (r.money || 0); if (m) S.money += m; this.refreshHud(); },
   refreshHud() { const g = GRADES[S.grade]; ui.hud(L(g.name), g.icon); },
   sfx(name) { audio.sfx(name); },
   onGrade() { if (S.grade >= 1 && !S.owned.moto) { S.owned.moto = true; this.spawnOwn('moto'); ui.toast(x('motoGift'), true, 6000); save(); } },
   currentGoal() { const m = this.missions; if (!m) return null; if (m.active) { const pp = this.player.pos; let b = null, bd = 1e9; for (const q of m.targets) { const d = Math.hypot(q.x - pp.x, q.z - pp.z); if (d < bd) { bd = d; b = q; } } return b; } const g = m.idleGoal(); return g.x !== undefined ? g : null; },
 };
-window.G = G;
+window.G = G; window.S = S;
 
 // ---------- Rendu ----------
 const canvas = $('game');
@@ -98,7 +99,7 @@ function updateSky(dt, force) {
 const progress = (p, text) => { $('loadbar').style.width = Math.round(p * 100) + '%'; if (text) $('loadtext').textContent = text; };
 async function enterCity(id, spawn) {
   G.switching = true;
-  if (G.act) G.act.dispose(); G.gps = null; G.gpsTarget = null;
+  if (G.jobs) G.jobs.dispose(); if (G.act) G.act.dispose(); G.gps = null; G.gpsTarget = null;
   if (G.missions) G.missions.dispose(); if (G.eco) G.eco.dispose(); if (G.crowd) G.crowd.dispose(); if (G.traffic) G.traffic.dispose();
   if (G.player && G.player.vehicle) G.player.exit();
   for (const v of G.vehicles) v.dispose(); G.vehicles = []; for (const s of G.scrollItems) G.scene.remove(s.mesh); G.scrollItems = [];
@@ -116,6 +117,7 @@ async function enterCity(id, spawn) {
   placeScrolls();
   G.eco = new Economy(G); await G.eco.setup();
   G.act = new Activities(G); G.act.setup();
+  G.jobs = new Jobs(G); await G.jobs.setup();
   G.missions = new Missions(G); G.switching = false; await G.missions.refresh(); progress(1);
   audio.ctxState.africa = !world.cfg.style;
   $('cityname').textContent = `${world.cityName()} · ${L(world.cfg.country)}`; updateSky(0, true); G.refreshHud();
@@ -124,7 +126,7 @@ G.spawnOwn = function (type) {
   const key = type === 'moto' ? 'moto' : 'car'; if (!S.owned[key]) return null;
   let v = this.vehicles.find(q => q.type === type && !q.lent);
   if (!v) { v = new Vehicle(type, type === 'moto' ? 0x1f5fa8 : 0xf4f4f0, this.scene, { rhd: !!this.world.cfg.left, plate: 2 }); v.owned = true; v.fuel = Math.min(v.tank, S.fuel[key]); v.marker = makeMarker(0x7dd87d, false); v.marker.userData.dia.position.y = type === 'moto' ? 1.9 : 2.2; this.scene.add(v.marker); const d = v.dispose.bind(v); v.dispose = () => { this.scene.remove(v.marker); d(); }; this.vehicles.push(v); }
-  const pp = this.player.pos, s = this.world.roadside(pp.x, pp.z, type === 'moto' ? 2.5 : 8), p = this.world.freeNear(s.x, s.z, 1.2); v.place(p.x, p.z, s.h); v.pos.y = this.world.groundY(p.x, p.z); return v;
+  const pp = this.player.pos, s = this.world.roadside(pp.x, pp.z, type === 'moto' ? 2.5 : 8), p = this.world.freeNear(s.x, s.z, 1.2); v.place(p.x, p.z, s.h); v.pos.y = this.world.groundY(p.x, p.z); upgradeVehicle(v); return v;
 };
 async function setCharacter(id) { const ch = await createCharacter(id); await applyOutfit(ch, S.top, S.bottom); G.player.setCharacter(ch); S.char = id; }
 function placeScrolls() {
@@ -179,6 +181,8 @@ function phone(tab = 0) {
     body += S.verses.length ? S.verses.map(id => ui.scriptureHTML(VERSES[id])).join('<div style="height:8px"></div>') : `<p>${x('noVerse')}</p>`;
   } else if (tab === 2) {
     body += '<div class="list">' + GRADES.slice(1).map((g, i) => `<div class="item ${S.grade > i ? '' : 'lock'}"><div class="gradeline"><div class="ic">${g.icon}</div><div><b>${i + 1}. ${esc(L(g.name))}</b><small>${esc(L(g.desc))}</small><small style="color:#f5c542">${S.grade > i ? '🏅 ' + esc(L(g.badge)) : ''}</small></div></div></div>`).join('') + '</div>';
+  } else if (tab === 6) {
+    body += G.jobs ? G.jobs.phoneHTML() : '';
   } else if (tab === 5) {
     body += `<p style="opacity:.8">${L(['Rends-toi aux grandes icônes dans la ville, ou appuie sur 📍 pour afficher l’itinéraire sur la mini-carte. Des imprévus ❗ arrivent aussi dans la rue : voleur, enfant perdu, panne…', 'Head to the big icons in the city, or press 📍 to show the route on the minimap. Surprises ❗ also happen in the street: a thief, a lost child, a breakdown…'])}</p><div class="list">` + G.act.list().map((r, i) => `<div class="item"><div class="gradeline"><div class="ic">${r.a.icon}</div><div style="flex:1"><b>${esc(L(r.a.name))}</b><small>${esc(L(r.a.desc))}</small><small>🏆 ${r.rec} · 🪙 ${esc(L(r.a.reward))} · ${r.d} m</small></div><button class="big" data-gps="${i}" style="padding:8px 12px">📍</button></div></div>`).join('') + `</div><p style="opacity:.7;font-size:13px">${L(['Bonnes actions accomplies', 'Good deeds done'])} : ${S.deeds || 0}</p>`;
   } else if (tab === 3) {
@@ -199,6 +203,7 @@ function phone(tab = 0) {
   box.querySelectorAll('[data-mm]').forEach(b => b.onclick = () => { S.settings.music = b.dataset.mm; save(); re(3); });
   const add = box.querySelector('#add-songs'); if (add) { const inp = box.querySelector('#song-files'); add.onclick = () => inp.click(); inp.onchange = () => { if (inp.files.length) { audio.addUserFiles(inp.files); re(3); } }; }
   box.querySelector('#ph-close').onclick = () => ui.closeModal();
+  if (tab === 6 && G.jobs) G.jobs.phoneBind(box, () => ui.closeModal());
   box.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const a = b.dataset.a;
     if (a === 'moto' || a === 'car') { if (G.player.vehicle) { if (G.eco.ride) return; G.player.exit(); } G.spawnOwn(a === 'moto' ? 'moto' : 'sedan'); ui.closeModal(); }
     else if (a === 'zem') { ui.closeModal(); G.eco.callZem(); }
@@ -242,6 +247,7 @@ function drawMinimap() {
   mg.font = '13px sans-serif'; mg.textAlign = 'center'; mg.textBaseline = 'middle';
   if (G.gps && G.gps.length > 1) { mg.save(); mg.beginPath(); mg.rect(0, 0, N, N); mg.clip(); mg.strokeStyle = 'rgba(0,0,0,0.45)'; mg.lineWidth = 7; mg.lineJoin = mg.lineCap = 'round'; const pathDraw = () => { mg.beginPath(); G.gps.forEach((q, i) => { const px = N / 2 + (q.x - pp.x) * k, pz = N / 2 + (q.z - pp.z) * k; i ? mg.lineTo(px, pz) : mg.moveTo(px, pz); }); mg.stroke(); }; pathDraw(); mg.strokeStyle = '#c85cff'; mg.lineWidth = 4; pathDraw(); mg.restore(); }
   mg.font = '15px sans-serif'; for (const ic of G.act.mapIcons()) { const p = place(ic.x, ic.z, ic.ch === '❗'); if (p) mg.fillText(ic.ch, p[0], p[1]); } mg.font = '13px sans-serif';
+  if (G.jobs) for (const ic of G.jobs.mapIcons()) { const p = place(ic.x, ic.z, false); if (p) mg.fillText(ic.ch, p[0], p[1]); }
   for (const ic of G.eco.mapIcons()) { const p = place(ic.x, ic.z, false); if (p) mg.fillText(ic.ch, p[0], p[1]); }
   for (const v of G.vehicles) if (!v.rider) dot(v.pos.x, v.pos.z, '#7dd87d', 4, true);
   const m = G.missions; if (!m.active) for (const o of m.offers) dot(o.x, o.z, o.def.mode === 'walk' ? '#f5c542' : '#5fb7f0', 6, o.def.mode === S.mode);
@@ -264,16 +270,17 @@ function interact() {
   if (eco.ride) { const n = eco.nearby(); prompt = n.prompt; if (inp.take('KeyE')) n.act(); inp.take('KeyF'); ui.setPrompt(prompt, 'E'); return; }
   if (pl.vehicle) { if (Math.abs(pl.vehicle.speed) < 3 && inp.take('KeyF')) { pl.exit(); return; } }
   else { let near = null; for (const v of G.vehicles) if (Math.hypot(v.pos.x - pp.x, v.pos.z - pp.z) < v.radius + 2.2) near = v; if (near) { prompt = near.isMoto ? x('enter') : x('drive'); key = 'F'; if (inp.take('KeyF')) { pl.enter(near); return; } } }
-  const near = eco.nearby(), an = G.act.nearby();
+  const near = eco.nearby(), an = G.act.nearby(), jn = G.jobs ? G.jobs.nearby() : null;
   if (G.act.active) { ui.setPrompt(prompt, key); inp.take('KeyE'); return; }
   if (m.prompt) { prompt = m.prompt; key = 'E'; }
+  else if (jn && !G.act.busyEvent()) { prompt = jn.prompt; key = 'E'; if (inp.take('KeyE')) { jn.act(); return; } }
   else if (an) { prompt = an.prompt; key = 'E'; if (inp.take('KeyE')) { an.act(); return; } }
   else if (!m.active && m.nearOffer() && !pl.vehicle && !G.act.busyEvent()) { const o = m.nearOffer(); prompt = `${o.npc ? L(TALK) : L(START)} — ${L(o.def.title)}`; key = 'E'; if (inp.take('KeyE')) { eco.endJob(true); m.start(o); return; } }
   else if (near) { prompt = near.prompt; key = 'E'; if (inp.take('KeyE')) { near.act(); return; } }
   else if (!m.active && !pl.vehicle) {
     const st = w.poi('station');
     if (Math.hypot(st.x - pp.x, st.z - pp.z) < 6) { prompt = x('travel'); key = 'E'; if (inp.take('KeyE')) { travelMenu(); return; } }
-    else { const p = G.crowd.nearestPed(pp, 2.3); if (p && p.pause <= 0) { prompt = x('greet'); key = 'E'; if (inp.take('KeyE')) { G.crowd.stop(p, pp, 6); pl.heading = Math.atan2(p.ch.root.position.x - pp.x, p.ch.root.position.z - pp.z); const g = GREETINGS[Math.random() * GREETINGS.length | 0][0]; if (G.time - (p.greeted || -99) > 60) { p.greeted = G.time; S.greeted++; G.reward({ love: 1 }); } ui.say(x('passer'), L(g)); return; } } }
+    else { const p = G.crowd.nearestPed(pp, 2.3); if (p && p.pause <= 0) { const tr = G.jobs && G.jobs.tracts > 0; prompt = tr ? L(['📜 Donner un tract et parler de Jésus', '📜 Give a tract and talk about Jesus']) : x('greet'); key = 'E'; if (inp.take('KeyE')) { G.crowd.stop(p, pp, 6); if (tr) { pl.heading = Math.atan2(p.ch.root.position.x - pp.x, p.ch.root.position.z - pp.z); G.jobs.greet(); return; } pl.heading = Math.atan2(p.ch.root.position.x - pp.x, p.ch.root.position.z - pp.z); const g = GREETINGS[Math.random() * GREETINGS.length | 0][0]; if (G.time - (p.greeted || -99) > 60) { p.greeted = G.time; S.greeted++; G.reward({ love: 1 }); } ui.say(x('passer'), L(g)); return; } } }
   }
   ui.setPrompt(prompt, key);
   // parchemins
@@ -301,16 +308,17 @@ function frame() {
   const me = { x: pl.pos.x, z: pl.pos.z, r: pl.vehicle ? pl.vehicle.radius : 0.4, ref: pl.vehicle }, parked = G.vehicles.concat(evCar).filter(v => !v.rider).map(v => ({ x: v.pos.x, z: v.pos.z, r: v.radius, ref: v }));
   G.traffic.update(dt, peds.concat([me], parked, eco.obstacles()), pl.pos);
   eco.update(dt, peds.concat(parked, G.traffic.cars.map(c => ({ x: c.pos.x, z: c.pos.z, r: c.radius, ref: c }))));
-  G.act.update(dt);
+  G.act.update(dt); if (G.jobs) G.jobs.update(dt);
   for (const v of G.vehicles) { v.marker.visible = !v.rider; v.marker.position.set(v.pos.x, 0, v.pos.z); v.marker.userData.dia.rotation.y += dt * 2; }
   for (const s of G.scrollItems) s.mesh.userData.box.rotation.y += dt * 2;
   G.missions.update(dt);
   if (playing && !ui.busy) interact(); else ui.setPrompt(null);
   // objectif et tableau de bord
   const m = G.missions; hudT -= dt;
-  if (hudT <= 0 && playing) { hudT = 0.3; let title, text, tg = null; const es = eco.status(), as = G.act.status();
+  if (hudT <= 0 && playing) { hudT = 0.3; let title, text, tg = null; const es = eco.status(), as = G.act.status(), js = G.jobs ? G.jobs.status() : null;
     if (m.active) { title = L(m.active.def.title); text = m.objective || '…'; if (m.timer > 0) text += `  ⏱ ${Math.ceil(m.timer)} s`; tg = G.currentGoal(); }
     else if (as) { title = as.title; text = as.text; if (as.x !== undefined) tg = as; }
+    else if (js) { title = js.title; text = js.text; if (js.x !== undefined) tg = js; }
     else if (es) { title = es.title; text = es.text; if (es.x !== undefined) tg = es; }
     else if (G.gpsTarget) { title = '📍 GPS'; text = G.gpsTarget.label; tg = G.gpsTarget; if (Math.hypot(tg.x - pl.pos.x, tg.z - pl.pos.z) < 12) { G.gpsTarget = null; ui.toast(L(['Tu es arrivé !', 'You have arrived!']), true); } }
     else { const g = m.idleGoal(); title = g.title; text = g.text; if (g.x !== undefined) tg = g; }

@@ -132,7 +132,7 @@ export class Economy {
     box.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const a = +b.dataset.a; if (!this.pay(a)) return; S.given = (S.given || 0) + a; ui.closeModal(); const fresh = this.time - (this.lastGift || -999) > 120; this.lastGift = this.time; this.G.reward(fresh ? { faith: Math.max(2, Math.min(12, Math.round(a / 250))), love: 2 } : { love: 1 }, true); ui.toast(t('gave'), true); save(); });
   }
   async alms(n) { if (!this.pay(PRICE.alms)) return; S.given = (S.given || 0) + PRICE.alms; const fresh = this.time - (n.cool || -999) > 90; n.cool = this.time; if (fresh) this.G.reward({ love: 2 }, true); n.ch.root.rotation.y = Math.atan2(this.G.player.pos.x - n.x, this.G.player.pos.z - n.z); await ui.say(t('beggar'), L(T.almsR[Math.random() * 2 | 0])); if (!this.almsVerse) { this.almsVerse = true; ui.toast(t('almsV'), true, 6000); } save(); }
-  async meal(n) { if (S.energy > 92) { ui.toast(t('mealR')); return; } if (!this.pay(PRICE.meal)) return; await ui.say(t('cook'), t('mealR')); S.energy = 100; this.warn.hungry = false; ui.toast(t('grace'), true); this.G.reward({ faith: 1 }, true); save(); }
+  async meal(n) { if (this.G.jobs && this.G.jobs.fasting()) { ui.toast(L(['🍞 Tu jeûnes aujourd’hui : tiens bon jusqu’au soir !', '🍞 You are fasting today: hold on until evening!'])); return; } if (S.energy > 92) { ui.toast(t('mealR')); return; } if (!this.pay(PRICE.meal)) return; await ui.say(t('cook'), t('mealR')); S.energy = 100; this.warn.hungry = false; ui.toast(t('grace'), true); this.G.reward({ faith: 1 }, true); save(); }
 
   // ---------- petits boulots ----------
   startDelivery(n) {
@@ -166,14 +166,14 @@ export class Economy {
     if (j.state === 'seek' && D(j.cust, pp) < 5.5 && Math.abs(v.speed) < 1.3) {
       const c = j.cust, i = G.crowd.statics.indexOf(c); if (i >= 0) G.crowd.statics.splice(i, 1); v.seat(c.ch, 1, false);
       const opts = this.destinations().filter(d => D(d, pp) > 250 && d.label !== t('goal')), d = opts[Math.random() * opts.length | 0] || { label: '…', x: pp.x + 300, z: pp.z };
-      const q = this.quote('zem', d); j.dest = d; j.len = q.len; j.bumps = 0; j.state = 'carry'; v.bumped = false; this.targets = [d]; ui.toast(`« ${t('please', { d: d.label })} »`, false, 4500);
+      const q = this.quote('zem', d); j.dest = d; j.len = q.len; j.bumps = 0; j.state = 'carry'; v.bumped = false; this.targets = [d]; ui.toast(`« ${t('please', { d: d.label })} »`, false, 4500); if (G.jobs) G.jobs.onPickup(j, this);
     } else if (j.state === 'carry') {
       if (v.bumped) { j.bumps++; v.bumped = false; } if (pl.pedBrake && !j.pb) { j.bumps++; j.pb = true; } else if (!pl.pedBrake) j.pb = false;
       if (D(j.dest, pp) < 9 && Math.abs(v.speed) < 1.3) {
         const c = j.cust; j.cust = null; c.ch.pose = null; G.scene.add(c.ch.root); const f = w.freeNear(v.pos.x + Math.cos(v.heading) * 1.4, v.pos.z - Math.sin(v.heading) * 1.4, 0.4); c.ch.root.position.set(f.x, w.groundY(f.x, f.z), f.z); c.ch.root.rotation.set(0, Math.atan2(v.pos.x - f.x, v.pos.z - f.z), 0); c.ch.currentName = null; c.ch.play('wave_01', 0.2); setTimeout(() => c.ch.dispose(), 5000);
-        const fare = r25((v.isMoto ? 150 : 300) + j.len * (v.isMoto ? 0.55 : 0.9)), tip = j.bumps === 0 ? r25(fare * 0.15) : 0; j.state = 'wait'; this.targets = [];
+        const fare = r25((v.isMoto ? 150 : 300) + j.len * (v.isMoto ? 0.55 : 0.9)), tip = j.bumps === 0 ? r25(fare * 0.15 * (G.jobs ? G.jobs.tipMul() : 1)) : 0; j.state = 'wait'; this.targets = [];
         if (Math.random() < 0.14) { const extra = fare * 10; const k = await ui.choose(t('client'), t('over', { a: fmt(extra), b: fmt(fare) }), [t('giveBack'), t('keep')]); if (k === 0) { await ui.say(t('client'), t('backR')); G.reward({ love: 3, faith: 2 }, true); } else await ui.say(S.name || '…', t('keepR')); }
-        this.earn(fare + tip); j.earned += fare + tip; j.n++; S.jobs = (S.jobs || 0) + 1; ui.toast(t('paid', { p: fmt(fare + tip) }) + (tip ? t('tip', { p: fmt(tip) }) : ''), true, 4500); save();
+        let got = fare + tip; if (G.jobs) got = await G.jobs.onDrop(j, got); if (got) this.earn(got); j.earned += got; if (G.jobs) G.jobs.onFare(got); j.n++; S.jobs = (S.jobs || 0) + 1; if (got) ui.toast(t('paid', { p: fmt(got) }) + (tip && got >= fare + tip ? t('tip', { p: fmt(tip) }) : ''), true, 4500); save();
         if (this.job === j) this.nextCustomer();
       }
     }
