@@ -31,6 +31,17 @@ De grandes icônes dans la ville signalent des activités rejouables, avec chron
 
 Des imprévus ❗ surgissent aussi en se promenant : un voleur à rattraper, un enfant perdu à ramener à sa maman, une grand-mère à accompagner à l'église, une voiture en panne à pousser. Le menu ☰ → Activités affiche la liste et trace l'itinéraire GPS sur la mini-carte.
 
+## Missions de vie (travail, foi, jeux publics)
+
+Comme dans San Andreas, la ville propose des missions de la vie de tous les jours, pensées pour édifier :
+
+- **🛵 Contrat zémidjan avec Tonton Komlan** (près du Grand Marché) : il te confie sa moto. Tu transportes des clients d'un point A à un point B et, le soir, tu reviens **faire les comptes** : 2 000 F de recette, le reste est pour toi. Dire la vérité sur ses gains, rendre la monnaie en trop, mettre de côté la dîme… La confiance grandit, et après plusieurs soirs fidèles il te vend sa moto à petit prix.
+- **🚕 Contrat taxi avec Madame Adjoa** (gare routière) : sur recommandation de Komlan et avec le permis de conduire. Recette de 5 000 F par soir.
+- **Passagers-épreuves** : une femme qui pleure (prier avec elle), un accouchement en urgence (foncer à l'hôpital), un colis douteux contre 10 000 F (refuser), un moqueur (répondre avec douceur), une étudiante qui doute, un client sans argent (pardonner), un téléphone oublié (le rendre).
+- **🙏 Vie spirituelle quotidienne** (téléphone ☰ → Ma vie) : prière du matin à la maison, lecture de la Parole, jeûne jusqu'au soir, culte du soir à l'église, tracts à partager avec les passants, visite d'un malade à l'hôpital. Trois disciplines par jour forment une série 🔥.
+- **🎤 Jeux publics** sur la place de l'Indépendance : le Grand Jeu Biblique (quitte ou double jusqu'à 16 000 F), l'exercice de l'épée (Ancien ou Nouveau Testament ?) et le verset à trous.
+- **🛒 Boutique Bon Berger** (marché) : casque, moteur révisé, grand réservoir, smartphone avec appli de courses, sono de louange, permis, Bible d'étude, guitare, chambre ; **investissements** qui rapportent chaque matin (kiosque tenu par une veuve, moto confiée à un jeune, poulailler) ; et des dons (parrainer un orphelin, offrir des Bibles).
+
 ## Lancer le jeu
 
 Le jeu est un site statique, sans étape de compilation. Il faut le servir par HTTP :
@@ -61,6 +72,7 @@ Puis ouvrir `http://localhost:8000`. Il peut aussi être publié tel quel sur Gi
 - `js/world.js` : construction des villes à partir de `assets/cities/*.json`
 - `js/content.js` : versets, grades et missions (texte bilingue)
 - `js/missions.js` : moteur de missions
+- `js/jobs.js` : contrats zémidjan/taxi, comptes du soir, vie spirituelle, jeux publics, boutique
 - `js/main.js` : boucle de jeu, menus, mini-carte
 - `tools/` : scripts qui ont servi à préparer les données (cartes, personnages, animations)
 
