@@ -1,3 +1,10 @@
+## Version 4 (actuelle) — les missions
+
+- `ZionCity_BandeAnnonce_v4_HD.mp4` (1920×1080, 2 min 24) et `ZionCity_BandeAnnonce_v4_WhatsApp.mp4` (1280×720, < 10 Mo).
+- Nouvelle séquence « Missions, comme dans San Andreas » : ambulancier, contrat zémidjan / taxi avec un patron, comptes du soir, courses de moto, jeux publics et quiz bibliques sur la place de l'Indépendance, boutique (améliorations, investissements, dons), prière du matin, jeûne, culte du soir.
+- Fin sans lien affiché : la voix annonce que le jeu est disponible gratuitement, à installer sur téléphone ou ordinateur, ou à jouer sans installation dans le navigateur avec le lien partagé sous la vidéo.
+- Sources : `source-v4/`.
+
 # Bande-annonce Zion City
 
 - `ZionCity_BandeAnnonce_HD.mp4` — 16:9, 1920×1080, 82 s (YouTube, Facebook, site)
